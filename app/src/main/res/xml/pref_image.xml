@@ -1,0 +1,14 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<ListPreference
+			android:key="WIDTH"
+			android:title="@string/settingImageSize" />
+
+	<EditTextPreference
+			android:key="QUALITY"
+			android:title="@string/settingImageQuality"
+			android:inputType="number|numberDecimal"
+			android:singleLine="true"
+			android:maxLines="1" />
+
+</PreferenceScreen>

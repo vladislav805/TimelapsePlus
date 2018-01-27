@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+	<LinearLayout
+			android:orientation="vertical"
+			android:padding="@dimen/settings_padding"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content">
+		<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content">
+			<TextView
+					android:id="@+id/textViewDelay"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/settingVideoDelay"
+					android:layout_weight="2.0" />
+			<EditText
+					android:id="@+id/editTextDelay"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:hint="@string/settingVideoDelayDefaultValue"
+					android:layout_weight="1.0"
+					android:inputType="number|numberDecimal" />
+		</LinearLayout>
+		<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content">
+			<TextView
+					android:id="@+id/textViewInterval"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/settingVideoCaptureInterval"
+					android:layout_weight="2.0" />
+			<EditText
+					android:id="@+id/editTextInterval"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:hint="@string/settingVideoCaptureIntervalDefaultValue"
+					android:layout_weight="1.0"
+					android:inputType="number|numberDecimal" />
+		</LinearLayout>
+		<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content">
+			<TextView
+					android:id="@+id/textViewFPS"
+					android:layout_width="wrap_content"
+					android:layout_height="0dp"
+					android:text="@string/settingVideoFps"
+					android:layout_weight="2.0" />
+			<LinearLayout
+					android:orientation="horizontal"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent">
+				<EditText
+						android:id="@+id/editTextFPS"
+						android:layout_width="60dp"
+						android:layout_height="wrap_content"
+						android:hint="@string/settingVideoFpsDefaultValue"
+						android:inputType="number|numberDecimal" android:textAlignment="center"/>
+				<RelativeLayout
+						android:layout_width="0dp"
+						android:layout_height="match_parent"
+						android:layout_weight="1">
+
+					<SeekBar
+							android:id="@+id/editSeekFPS"
+							android:max="45"
+							android:layout_width="match_parent"
+							android:layout_height="wrap_content"
+							android:layout_centerVertical="true"
+							android:layout_alignParentStart="true"/>
+				</RelativeLayout>
+			</LinearLayout>
+		</LinearLayout>
+	</LinearLayout>
+</ScrollView>
