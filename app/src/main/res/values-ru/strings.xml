@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="exitDialogTitle">Подтверждение</string>
+	<string name="aboutDevelopers">ExplorerDC © 2011\nВладислав Велюга © 2018</string>
+	<string name="errorPermission">Не все разрешения были получены</string>
+	<string name="exitDialogCancel">Отмена</string>
+	<string name="exitDialogOK">ОК</string>
+	<string name="exitDialogQuestion">Вы уверены, что хотите выйти?</string>
+	<string name="holderGrantAccess">Пожалуйста, дайте разрешения</string>
+	<string name="mainFramesCount">Кадр %1$d/%2$dс; %3$dМБ, ост. %4$dМБ</string>
+	<string name="mainFramesCountFinished">Сохранено.</string>
+	<string name="mainFramesCountReady">Готов</string>
+	<string name="mainMediaInfo">%1$dx%2$d@%3$d q%4$d; инт %5$dмс</string>
+	<string name="settingImageFilter">Фильтр</string>
+	<string name="settingImageQuality">Качество</string>
+	<string name="settingImageSize">Разрешение</string>
+	<string name="settingImageWhiteBalance">Баланс белого</string>
+	<string name="settingTabAbout">О приложении</string>
+	<string name="settingTabImage">Изображение</string>
+	<string name="settingTabVideo">Таймлапс</string>
+	<string name="settingVideoCaptureInterval">Интервал съемки (мс)</string>
+	<string name="settingVideoDelay">Задержка после старта (мс)</string>
+	<string name="settingVideoFps">FPS видео</string>
+	<string name="settingVideoPath">Путь</string>
+	<string name="settingsSave">Сохранить</string>
+</resources>

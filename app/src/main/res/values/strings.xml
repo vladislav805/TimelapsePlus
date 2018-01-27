@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="applicationName">TimeLapse!</string>
+	<string name="applicationName" translatable="false">TimeLapse!</string>
 
-	<string name="mainCaptureButton">Capture</string>
-	<string name="mainCaptureButtonStop">Stop</string>
 	<string name="mainFramesCountFinished">Saved.</string>
 	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
 	<string name="mainMediaInfo">%1$dx%2$d@%3$d q%4$d; int %5$dms</string>
@@ -14,7 +12,6 @@
 	<string name="exitDialogOK">OK</string>
 	<string name="exitDialogCancel">Cancel</string>
 
-	<string name="settingsTitle">Settings</string>
 	<string name="settingsSave">Save</string>
 
 	<string name="settingTabImage">Image</string>
@@ -29,12 +26,12 @@
 	<string name="settingVideoDelay">Delay after start (ms)</string>
 	<string name="settingVideoCaptureInterval">Capture Interval (ms)</string>
 	<string name="settingVideoFps">Video FPS</string>
-	<string name="settingVideoFpsDefaultValue">25</string>
-	<string name="settingVideoCaptureIntervalDefaultValue">5000</string>
-	<string name="settingVideoDelayDefaultValue">3000</string>
+	<string name="settingVideoFpsDefaultValue" translatable="false">25</string>
+	<string name="settingVideoCaptureIntervalDefaultValue" translatable="false">5000</string>
+	<string name="settingVideoDelayDefaultValue" translatable="false">3000</string>
 	<string name="settingVideoPath">Path</string>
 
-	<string name="aboutVersion">ver. %s</string>
+	<string name="aboutVersion" translatable="false">ver. %s</string>
 	<string name="aboutDevelopers">ExplorerDC © 2011\nVladislav Veluga © 2018</string>
 
 	<string name="errorPermission">Not all permissions are accepted</string>
