@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<style name="Settings">
+
+	</style>
+
+	<style name="Settings.Field">
+
+	</style>
+
+	<dimen name="settings_field_height">25dp</dimen>
+</resources>

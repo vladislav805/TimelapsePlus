@@ -1,6 +1,5 @@
 package ru.vlad805.timelapse;
 
-import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -18,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -38,15 +38,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private static final boolean DEBUG = true;
 
-	private static final String WORK_DIRECTORY = "/TimeLapseDir/";
-	private static final String PREFS_EFFECT = "COLOREFFECT";
+	private static final String PREFS_WORK_DIRECTORY = "WORKING_DIRECTORY";
+	private static final String PREFS_EFFECT = "COLOR_EFFECT";
 	private static final String PREFS_DELAY = "DELAY";
 	private static final String PREFS_FPS = "FPS";
 	private static final String PREFS_HEIGHT = "HEIGHT";
 	private static final String PREFS_INTERVAL = "INTERVAL";
 	private static final String PREFS_NAME = "TimeLapse";
 	private static final String PREFS_QUALITY = "QUALITY";
-	private static final String PREFS_WHITE_BALANCE = "WHITEBALANCE";
+	private static final String PREFS_WHITE_BALANCE = "WHITE_BALANCE";
 	private static final String PREFS_WIDTH = "WIDTH";
 	private static final String PREFS_ZOOM = "ZOOM";
 
@@ -63,6 +63,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private SurfaceView mSurfaceView;
 	private TextView mtvFramesCount;
+	private TextView mtvPrefsCapture;
 	private FloatingActionButton mButtonToggle;
 
 	private int mWidth = 0;
@@ -74,7 +75,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private String mBalance = "";
 	private String mEffect = "";
 	private String mPath = null;
-	private String mTimeStamp;
 	private int mQuality;
 
 	private CaptureState mState = CaptureState.IDLE;
@@ -89,8 +89,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.activity_main);
 
-		mPath = String.valueOf(Environment.getExternalStorageDirectory().getAbsolutePath()) + WORK_DIRECTORY;
-
+		loadPreferences();
 		initDirectory();
 
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
@@ -131,20 +130,13 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 				break;
 
 			case R.id.settingsButton:
-
-				break;
-
-			case R.id.openImageSettings:
-				showPictureConfigDialog();
-				break;
-
-			case R.id.openVideoSettings:
-				showTimeLapseConfigDialog();
+				openSettings();
 				break;
 
 			case R.id.mainSurface:
 				mCamera.autoFocus(null);
 				break;
+
 		}
 	}
 
@@ -178,13 +170,25 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 * Set current count of frames in UI
 	 */
 	private void setCurrentCountOfFrames() {
+		//noinspection RedundantCast
 		mtvFramesCount.setText(String.format(
-				"Frames: %d; approx. %d sec.; size %d MB; free %d MB",
-				//getString(R.string.mainFramesCount),
+				getString(R.string.mainFramesCount),
 				mVideoRecorder.getFrameCount(),
 				(int) (mVideoRecorder.getFrameCount() / mFPS),
 				(int) (mVideoRecorder.getFileSize() / Math.pow(2, 20)),
 				(int) (mRoot.getFreeSpace() / Math.pow(2, 20))
+		));
+	}
+
+	private void setCurrentSettingsPreview() {
+		Size s = mCamera.getParameters().getPictureSize();
+		mtvPrefsCapture.setText(String.format(
+				getString(R.string.mainMediaInfo),
+				s.width,
+				s.height,
+				mFPS,
+				mQuality,
+				mInterval
 		));
 	}
 
@@ -204,11 +208,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mtvFramesCount = (TextView) findViewById(R.id.framesCount);
 		mtvFramesCount.setText(R.string.mainFramesCountReady);
 
+		mtvPrefsCapture = (TextView) findViewById(R.id.framesPrefs);
+
 		mButtonToggle = (FloatingActionButton) findViewById(R.id.startButton);
 		mButtonToggle.setOnClickListener(this);
 
-		findViewById(R.id.openImageSettings).setOnClickListener(this);
-		findViewById(R.id.openVideoSettings).setOnClickListener(this);
+		findViewById(R.id.settingsButton).setOnClickListener(this);
+
+		/*findViewById(R.id.openImageSettings).setOnClickListener(this);
+		findViewById(R.id.openVideoSettings).setOnClickListener(this);*/
 	}
 
 	/**
@@ -225,6 +233,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mInterval = settings.getInt(PREFS_INTERVAL, 5000);
 		mFPS = settings.getInt(PREFS_FPS, 25);
 		mQuality = settings.getInt(PREFS_QUALITY, 70);
+		mPath = settings.getString(PREFS_WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
 	}
 
 	/**
@@ -310,7 +319,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 */
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-		loadPreferences();
 		debug("surfaceCreated.");
 		mSurfaceHolder = holder;
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
@@ -405,6 +413,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 	}
 
+	private int mPreviousBrightness;
+
 	/**
 	 * Start capture timelapse
 	 */
@@ -413,16 +423,17 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mWakeLock.acquire();
 		mState = CaptureState.RECORD;
 
-		mTimeStamp = getTimeStamp();
+		mPreviousBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
 
 		Parameters param = mCamera.getParameters();
 		Size size = param.getPictureSize();
 		param.setRotation(0);
 		mCamera.setParameters(param);
 
-		String name = String.format("%s%s.avi", mPath, mTimeStamp);
+		setCurrentSettingsPreview();
 
-		mVideoRecorder = new VideoRecorder(name, size.width, size.height, (double) mFPS);
+		mVideoRecorder = new VideoRecorder(String.format("%s%s.avi", mPath, getTimeStamp()), size.width, size.height, (double) mFPS);
 		mCamera.autoFocus(mStartCaptureAfterAutoFocus);
 	}
 
@@ -434,6 +445,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mWakeLock.release();
 		mState = CaptureState.IDLE;
 		mtvFramesCount.setText(R.string.mainFramesCountFinished);
+
+		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, mPreviousBrightness);
 
 		try {
 			mTimer.cancel();
@@ -497,6 +510,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 * @param filename file name of frame
 	 * @param data bytes of contents file
 	 */
+	@SuppressWarnings("unused")
 	private void savePicture(String filename, byte[] data) {
 		try (FileOutputStream fos = new FileOutputStream(filename)) {
 			fos.write(data);
@@ -505,19 +519,95 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 	}
 
-	private void initSpinnerFilter(final Parameters params, Spinner spinnerFilter) {
+
+	private void openSettings() {
+		debug("open window");
+		View layout = ((LayoutInflater) getSystemService("layout_inflater")).inflate(R.layout.activity_settings, null);
+
+		TabHost tabHost = layout.findViewById(R.id.settingsTabsHost);
+		tabHost.setup();
+
+		tabHost.addTab(tabHost.newTabSpec("image").setContent(R.id.settingsTabImage).setIndicator(getString(R.string.settingTabImage)));
+		tabHost.addTab(tabHost.newTabSpec("video").setContent(R.id.settingsTabVideo).setIndicator(getString(R.string.settingTabVideo)));
+		tabHost.addTab(tabHost.newTabSpec("about").setContent(R.id.settingsTabAbout).setIndicator(getString(R.string.settingTabAbout)));
+
+		Parameters param = mCamera.getParameters();
+
+		final EditText editTextDelay = layout.findViewById(R.id.editTextDelay);
+		editTextDelay.setText(String.valueOf(mDelay));
+
+		final EditText editTextInterval = layout.findViewById(R.id.editTextInterval);
+		editTextInterval.setText(String.valueOf(mInterval));
+
+		final EditText editTextFPS = layout.findViewById(R.id.editTextFPS);
+		editTextFPS.setText(String.valueOf(mFPS));
+
+		final SeekBar seekFPS = layout.findViewById(R.id.editSeekFPS);
+		seekFPS.setProgress(mFPS - 15);
+		seekFPS.setMax(45);
+		seekFPS.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+				editTextFPS.setText(String.valueOf(seekBar.getProgress() + 15));
+			}
+
+			@Override public void onStartTrackingTouch(SeekBar seekBar) { }
+			@Override public void onStopTrackingTouch(SeekBar seekBar) { }
+		});
+
+		final SeekBar seekQuality = layout.findViewById(R.id.editTextQuality);
+		seekQuality.setProgress(mQuality);
+		seekQuality.setMax(100);
+
+		final EditText editTextPath = layout.findViewById(R.id.editTextPath);
+		editTextPath.setText(mPath);
+
+		((TextView) layout.findViewById(R.id.aboutVersion)).setText(String.format(getString(R.string.aboutVersion), BuildConfig.VERSION_NAME));
+
+		new Builder(this)
+				//.setTitle(R.string.settingsTitle)
+				.setView(layout)
+				.setPositiveButton(R.string.settingsSave, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int i) {
+						mDelay = getIntegerValue(editTextDelay, 3000);
+						mInterval = getIntegerValue(editTextInterval, 5000);
+						mFPS = getIntegerValue(editTextFPS, 15);
+						mFPS = Math.max(15, mFPS);
+						mFPS = Math.min(60, mFPS);
+						mQuality = seekQuality.getProgress();
+
+						String newPath = editTextPath.getText().toString();
+						if (!newPath.equals(mPath)) {
+							mPath = newPath;
+							initDirectory();
+						}
+						savePreference();
+						setCurrentSettingsPreview();
+					}
+				})
+				.create()
+				.show();
+		initSpinnerFilter(param, (Spinner) layout.findViewById(R.id.spinnerFilter));
+		initSpinnerSize(param, (Spinner) layout.findViewById(R.id.spinnerSize));
+		initSpinnerWhiteBalance(param, (Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
+		debug("opened window");
+	}
+
+
+	private void initSpinnerFilter(final Parameters params, Spinner spinner) {
 		String curEffect = params.getColorEffect();
 		final List<String> effectList = params.getSupportedColorEffects();
 		if (effectList != null) {
-			ArrayAdapter<String> filterArrayAdapter = new ArrayAdapter<>(this, 17367048, effectList.toArray(new String[effectList.size()]));
-			filterArrayAdapter.setDropDownViewResource(17367049);
-			spinnerFilter.setAdapter(filterArrayAdapter);
+			ArrayAdapter<String> filterArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, effectList.toArray(new String[effectList.size()]));
+			filterArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			spinner.setAdapter(filterArrayAdapter);
 			for (int i = 0; i < effectList.size(); i++) {
 				if (curEffect.equals(effectList.get(i))) {
-					spinnerFilter.setSelection(i);
+					spinner.setSelection(i);
 				}
 			}
-			spinnerFilter.setOnItemSelectedListener(new OnItemSelectedListener() {
+			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
 					TimeLapseActivity.this.mEffect = effectList.get(position);
 					params.setColorEffect(TimeLapseActivity.this.mEffect);
@@ -530,7 +620,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 	}
 
-	private void initSpinnerSize(Parameters param, Spinner spinnerSize) {
+	private void initSpinnerSize(Parameters param, Spinner spinner) {
 		final List<Size> sizeList = param.getSupportedPictureSizes();
 		final List<Size> previewSizes = param.getSupportedPreviewSizes();
 
@@ -538,27 +628,27 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		if (curSize != null && sizeList != null) {
 			int i;
-			debug("--- Current Picture Size: " + curSize.width + " x " + curSize.height);
+			debug("--- Current Picture Size: " + curSize.width + "x" + curSize.height);
 			String[] sizeArray = new String[sizeList.size()];
 
 			for (i = 0; i < sizeList.size(); i++) {
-				sizeArray[i] = sizeList.get(i).width + " x " + sizeList.get(i).height;
+				sizeArray[i] = sizeList.get(i).width + "x" + sizeList.get(i).height;
 			}
 
 			ArrayAdapter<String> sizeArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, sizeArray);
 			sizeArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinnerSize.setAdapter(sizeArrayAdapter);
+			spinner.setAdapter(sizeArrayAdapter);
 			i = 0;
 
 			while (i < sizeList.size()) {
 				if (curSize.width == sizeList.get(i).width && curSize.height == sizeList.get(i).height) {
-					spinnerSize.setSelection(i);
+					spinner.setSelection(i);
 				}
 				i++;
 			}
 
 			final Parameters parameters = param;
-			spinnerSize.setOnItemSelectedListener(new OnItemSelectedListener() {
+			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
 					Size targetSize = sizeList.get(position);
 					mWidth = targetSize.width;
@@ -587,7 +677,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 	}
 
-	private void initSpinnerWhiteBalance(final Parameters params, Spinner spinnerBalance) {
+	private void initSpinnerWhiteBalance(final Parameters params, Spinner spinner) {
 		String curBalance = params.getWhiteBalance();
 
 		final List<String> balanceList = params.getSupportedWhiteBalance();
@@ -595,15 +685,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		if (balanceList != null) {
 			ArrayAdapter<String> balanceArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, balanceList.toArray(new String[balanceList.size()]));
 			balanceArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinnerBalance.setAdapter(balanceArrayAdapter);
+			spinner.setAdapter(balanceArrayAdapter);
 
 			for (int i = 0; i < balanceList.size(); i++) {
 				if (curBalance.equals(balanceList.get(i))) {
-					spinnerBalance.setSelection(i);
+					spinner.setSelection(i);
 				}
 			}
 
-			spinnerBalance.setOnItemSelectedListener(new OnItemSelectedListener() {
+			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
 					mBalance = balanceList.get(position);
 					params.setWhiteBalance(TimeLapseActivity.this.mBalance);
@@ -622,74 +712,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	private void showTimeLapseConfigDialog() {
-		View layout = ((LayoutInflater) getSystemService("layout_inflater")).inflate(R.layout.activity_settings_video, null);
-
-		final EditText editTextDelay = layout.findViewById(R.id.editTextDelay);
-		editTextDelay.setText(String.valueOf(mDelay));
-
-		final EditText editTextInterval = layout.findViewById(R.id.editTextInterval);
-		editTextInterval.setText(String.valueOf(mInterval));
-
-		final EditText editTextFPS = layout.findViewById(R.id.editTextFPS);
-		editTextFPS.setText(String.valueOf(mFPS));
-
-		final SeekBar seekFPS = layout.findViewById(R.id.editSeekFPS);
-		seekFPS.setProgress(mFPS - 15);
-		seekFPS.setMax(45);
-		seekFPS.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-				editTextFPS.setText(String.valueOf(seekBar.getProgress() + 15));
-			}
-
-			@Override public void onStartTrackingTouch(SeekBar seekBar) { }
-			@Override public void onStopTrackingTouch(SeekBar seekBar) { }
-		});
-
-		new Builder(this)
-				.setTitle(R.string.settingsTitle)
-				.setView(layout)
-				.setPositiveButton(R.string.settingsSave, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialogInterface, int i) {
-						mDelay = getIntegerValue(editTextDelay, 3000);
-						mInterval = getIntegerValue(editTextInterval, 5000);
-						mFPS = getIntegerValue(editTextFPS, 15);
-						mFPS = Math.max(15, mFPS);
-						mFPS = Math.min(60, mFPS);
-						savePreference();
-					}
-				})
-				.create()
-				.show();
-	}
-
-	private void showPictureConfigDialog() {
-		Parameters param = mCamera.getParameters();
-
-		View layout = ((LayoutInflater) getSystemService("layout_inflater")).inflate(R.layout.activity_settings_image, null);
-
-		final SeekBar seekQuality = layout.findViewById(R.id.editTextQuality);
-		seekQuality.setProgress(mQuality);
-		seekQuality.setMax(100);
-
-		AlertDialog dialog = new Builder(this)
-				.setTitle(R.string.settingsTitle)
-				.setView(layout)
-				.setPositiveButton(R.string.settingsSave, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialogInterface, int i) {
-						mQuality = seekQuality.getProgress();
-						savePreference();
-					}
-				}).create();
-		initSpinnerFilter(param, (Spinner) layout.findViewById(R.id.spinnerFilter));
-		initSpinnerSize(param, (Spinner) layout.findViewById(R.id.spinnerSize));
-		initSpinnerWhiteBalance(param, (Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
-		dialog.show();
+		setCurrentSettingsPreview();
 	}
 
 	private int getIntegerValue(EditText inputBox, int defaultValue) {
@@ -714,10 +737,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 						finish();
 					}
 				})
-				.setNegativeButton(R.string.exitDialogCancel, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialogInterface, int i) { }
-				})
+				.setNegativeButton(R.string.exitDialogCancel, null)
 				.create()
 				.show();
 	}
@@ -767,17 +787,20 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		editor.putInt(PREFS_INTERVAL, mInterval);
 		editor.putInt(PREFS_FPS, mFPS);
 		editor.putInt(PREFS_QUALITY, mQuality);
+		editor.putString(PREFS_WORK_DIRECTORY, mPath);
 		editor.apply();
 	}
 
-
-
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-		if (requestCode == 1 && resultCode == 999) {
-			finish();
+
+		switch (requestCode) {
+			case 1:
+				if (resultCode == 999) {
+					finish();
+				}
+				break;
 		}
 	}
-
 
 	private void debug(String msg) {
 		Log.e("TimeLapse", msg);

@@ -4,71 +4,63 @@
 		android:id="@+id/scrollView1"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content">
-	<LinearLayout
-			android:orientation="vertical"
-			android:id="@+id/linearLayout1"
-			android:padding="8dp"
+	<TableLayout
+			android:padding="@dimen/settings_padding"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content">
-		<LinearLayout
-				android:orientation="vertical"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content">
+
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
 			<TextView
 					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
+					android:layout_height="@dimen/settings_field_height"
 					android:text="@string/settingImageSize"
-					android:layout_weight="2.0" />
+					android:layout_weight="1.0"
+					android:gravity="fill_vertical"/>
 			<Spinner
 					android:id="@+id/spinnerSize"
 					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:layout_weight="1.0" android:spinnerMode="dialog"/>
-		</LinearLayout>
-		<LinearLayout
-				android:orientation="vertical"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content">
+					android:layout_height="@dimen/settings_field_height"
+					android:layout_weight="2.0" android:spinnerMode="dialog"/>
+		</TableRow>
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
 			<TextView
 					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
+					android:layout_height="@dimen/settings_field_height"
 					android:text="@string/settingImageFilter"
-					android:layout_weight="2.0" />
+					android:layout_weight="1.0"
+					android:gravity="fill_vertical"/>
 			<Spinner
 					android:id="@+id/spinnerFilter"
 					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:layout_weight="1.0" android:spinnerMode="dialog"/>
-		</LinearLayout>
-		<LinearLayout
-				android:orientation="vertical"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content">
+					android:layout_height="@dimen/settings_field_height"
+					android:layout_weight="2.0" android:spinnerMode="dialog"/>
+		</TableRow>
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
 			<TextView
 					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
-					android:text="@string/settingWhiteBalance"
-					android:layout_weight="2.0" />
+					android:layout_height="@dimen/settings_field_height"
+					android:text="@string/settingImageWhiteBalance"
+					android:layout_weight="1.0"
+					android:gravity="fill_vertical"/>
 			<Spinner
 					android:id="@+id/spinnerWhiteBalance"
 					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:layout_weight="1.0" />
-		</LinearLayout>
-		<LinearLayout
-				android:orientation="vertical"
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content">
+					android:layout_height="@dimen/settings_field_height"
+					android:layout_weight="2.0" android:spinnerMode="dialog"/>
+		</TableRow>
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
 			<TextView
 					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
+					android:layout_height="@dimen/settings_field_height"
 					android:text="@string/settingImageQuality"
-					android:layout_weight="2.0" />
+					android:layout_weight="1.0"
+					android:gravity="fill_vertical"/>
 			<SeekBar
 					android:id="@+id/editTextQuality"
 					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
+					android:layout_height="match_parent"
+					android:layout_gravity="fill_vertical"
 					android:layout_weight="2.0"/>
-		</LinearLayout>
-	</LinearLayout>
+		</TableRow>
+	</TableLayout>
 </ScrollView>

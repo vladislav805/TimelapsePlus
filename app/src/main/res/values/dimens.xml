@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<dimen name="frame_info_height">38dp</dimen>
 	<dimen name="cfc_padding">8dp</dimen>
 	<dimen name="settings_padding">16dp</dimen>
 </resources>

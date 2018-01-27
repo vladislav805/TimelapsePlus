@@ -1,87 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">TimeLapse!</string>
+	<string name="applicationName">TimeLapse!</string>
+
 	<string name="mainCaptureButton">Capture</string>
 	<string name="mainCaptureButtonStop">Stop</string>
 	<string name="mainFramesCountFinished">Saved.</string>
 	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
 	<string name="mainMediaInfo">%1$dx%2$d@%3$d q%4$d; int %5$dms</string>
 	<string name="mainFramesCountReady">Ready</string>
+
 	<string name="exitDialogTitle">Confirm</string>
 	<string name="exitDialogQuestion">Are you sure to quit?</string>
 	<string name="exitDialogOK">OK</string>
 	<string name="exitDialogCancel">Cancel</string>
-	<string name="mainButtonImage">Image</string>
-	<string name="mainButtonVideo">Video</string>
+
 	<string name="settingsTitle">Settings</string>
 	<string name="settingsSave">Save</string>
 
+	<string name="settingTabImage">Image</string>
+	<string name="settingTabVideo">Timelapse</string>
+	<string name="settingTabAbout">About</string>
 
-	<string name="title_activity_settings">Settings</string>
-
-	<string name="pref_header_video">Video settings</string>
-	<string name="pref_header_image">Image settings</string>
-
-	<!-- Image settings -->
 	<string name="settingImageSize">Video resolution</string>
 	<string name="settingImageQuality">Quality</string>
-	<string name="settingWhiteBalance">White balance</string>
+	<string name="settingImageWhiteBalance">White balance</string>
 	<string name="settingImageFilter">Filter</string>
 
-
-	<!-- Strings related to Settings -->
-
-	<!-- Example General settings -->
-
-
-	<string name="pref_title_social_recommendations">Enable social recommendations</string>
-	<string name="pref_description_social_recommendations">Recommendations for people to contact based on your message
-		history
-	</string>
-
-
-	<string name="pref_title_add_friends_to_messages">Add friends to messages</string>
-	<string-array name="pref_example_list_titles">
-		<item>Always</item>
-		<item>When possible</item>
-		<item>Never</item>
-	</string-array>
-	<string-array name="pref_example_list_values">
-		<item>1</item>
-		<item>0</item>
-		<item>-1</item>
-	</string-array>
-
-	<!-- Example settings for Data & Sync -->
-	<string-array name="pref_sync_frequency_titles">
-		<item>15 minutes</item>
-		<item>30 minutes</item>
-		<item>1 hour</item>
-		<item>3 hours</item>
-		<item>6 hours</item>
-		<item>Never</item>
-	</string-array>
-
-	<!-- Example settings for Notifications -->
-
-
-	<string name="pref_title_new_message_notifications">New message notifications</string>
-
-	<string name="pref_title_ringtone">Ringtone</string>
-	<string name="pref_ringtone_silent">Silent</string>
-
-	<string name="pref_title_vibrate">Vibrate</string>
-	<string name="errorPermission">Not all permissions are accepted</string>
-	<string name="holderGrantAccess">Please, make permissions</string>
 	<string name="settingVideoDelay">Delay after start (ms)</string>
 	<string name="settingVideoCaptureInterval">Capture Interval (ms)</string>
 	<string name="settingVideoFps">Video FPS</string>
 	<string name="settingVideoFpsDefaultValue">25</string>
 	<string name="settingVideoCaptureIntervalDefaultValue">5000</string>
 	<string name="settingVideoDelayDefaultValue">3000</string>
-	<string name="settingTabImage">Image</string>
-	<string name="settingTabVideo">Timelapse</string>
-	<string name="settingTabAbout">About</string>
+	<string name="settingVideoPath">Path</string>
 
+	<string name="aboutVersion">ver. %s</string>
+	<string name="aboutDevelopers">ExplorerDC © 2011\nVladislav Veluga © 2018</string>
+
+	<string name="errorPermission">Not all permissions are accepted</string>
+	<string name="holderGrantAccess">Please, make permissions</string>
 
 </resources>
