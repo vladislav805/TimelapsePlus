@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="applicationName" translatable="false">TimeLapse!</string>
+	<string name="applicationName" translatable="false">TimelapsePlus</string>
 
 	<string name="mainFramesCountFinished">Saved.</string>
 	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
