@@ -4,7 +4,8 @@
 	<string name="mainCaptureButton">Capture</string>
 	<string name="mainCaptureButtonStop">Stop</string>
 	<string name="mainFramesCountFinished">Saved.</string>
-	<string name="mainFramesCount">Frames: %d</string>
+	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
+	<string name="mainMediaInfo">%1$dx%2$d@%3$d q%4$d; int %5$dms</string>
 	<string name="mainFramesCountReady">Ready</string>
 	<string name="exitDialogTitle">Confirm</string>
 	<string name="exitDialogQuestion">Are you sure to quit?</string>
@@ -78,6 +79,9 @@
 	<string name="settingVideoFpsDefaultValue">25</string>
 	<string name="settingVideoCaptureIntervalDefaultValue">5000</string>
 	<string name="settingVideoDelayDefaultValue">3000</string>
+	<string name="settingTabImage">Image</string>
+	<string name="settingTabVideo">Timelapse</string>
+	<string name="settingTabAbout">About</string>
 
 
 </resources>
