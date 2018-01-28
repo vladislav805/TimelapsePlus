@@ -1,5 +1,6 @@
 package ru.vlad805.timelapse;
 
+import android.Manifest;
 import android.app.AlertDialog.Builder;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -7,18 +8,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.Size;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.*;
@@ -416,8 +420,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mWakeLock.acquire();
 		mState = CaptureState.RECORD;
 
-		mPreviousBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
-		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+			mPreviousBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+		}
 
 		Parameters param = mCamera.getParameters();
 		Size size = param.getPictureSize();
@@ -439,7 +445,9 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mState = CaptureState.IDLE;
 		mtvFramesCount.setText(R.string.mainFramesCountFinished);
 
-		Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, mPreviousBrightness);
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, mPreviousBrightness);
+		}
 
 		try {
 			mTimer.cancel();
@@ -459,8 +467,16 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	public class CaptureTask extends TimerTask {
 
 		public void run() {
-			mAudioManager.setStreamMute(AudioManager.STREAM_SYSTEM, true);
+			toggleAudioMute(true);
 			mCamera.takePicture(null, null, null, TimeLapseActivity.this);
+		}
+	}
+
+	private void toggleAudioMute(boolean state) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			mAudioManager.adjustStreamVolume(AudioManager.STREAM_SYSTEM, state ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
+		} else {
+			mAudioManager.setStreamMute(AudioManager.STREAM_SYSTEM, state);
 		}
 	}
 
@@ -483,7 +499,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		if (mCamera != null) {
 			mCamera.startPreview();
 		}
-		mAudioManager.setStreamMute(AudioManager.STREAM_SYSTEM, false);
+		toggleAudioMute(false);
 		if (mTimer != null) {
 			mTimer.schedule(new CaptureTask(), (long) mInterval);
 		}
