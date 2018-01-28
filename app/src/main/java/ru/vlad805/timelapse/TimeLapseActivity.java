@@ -38,18 +38,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private static final boolean DEBUG = true;
 
-	private static final String PREFS_WORK_DIRECTORY = "WORKING_DIRECTORY";
-	private static final String PREFS_EFFECT = "COLOR_EFFECT";
-	private static final String PREFS_DELAY = "DELAY";
-	private static final String PREFS_FPS = "FPS";
-	private static final String PREFS_HEIGHT = "HEIGHT";
-	private static final String PREFS_INTERVAL = "INTERVAL";
-	private static final String PREFS_NAME = "TimeLapse";
-	private static final String PREFS_QUALITY = "QUALITY";
-	private static final String PREFS_WHITE_BALANCE = "WHITE_BALANCE";
-	private static final String PREFS_WIDTH = "WIDTH";
-	private static final String PREFS_ZOOM = "ZOOM";
-
 	private static final String TAG = "TimeLapse";
 
 	private AudioManager mAudioManager;
@@ -224,16 +212,16 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 */
 	private void loadPreferences() {
 		debug("Loading preference...");
-		SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-		mEffect = settings.getString(PREFS_EFFECT, "");
-		mWidth = settings.getInt(PREFS_WIDTH, 0);
-		mHeight = settings.getInt(PREFS_HEIGHT, 0);
-		mBalance = settings.getString(PREFS_WHITE_BALANCE, "");
-		mDelay = settings.getInt(PREFS_DELAY, 3000);
-		mInterval = settings.getInt(PREFS_INTERVAL, 5000);
-		mFPS = settings.getInt(PREFS_FPS, 25);
-		mQuality = settings.getInt(PREFS_QUALITY, 70);
-		mPath = settings.getString(PREFS_WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
+		SharedPreferences settings = getSharedPreferences(Setting.NAME, Context.MODE_PRIVATE);
+		mEffect = settings.getString(Setting.EFFECT, "");
+		mWidth = settings.getInt(Setting.WIDTH, 0);
+		mHeight = settings.getInt(Setting.HEIGHT, 0);
+		mBalance = settings.getString(Setting.WHITE_BALANCE, "");
+		mDelay = settings.getInt(Setting.DELAY, 3000);
+		mInterval = settings.getInt(Setting.INTERVAL, 5000);
+		mFPS = settings.getInt(Setting.FPS, 25);
+		mQuality = settings.getInt(Setting.QUALITY, 70);
+		mPath = settings.getString(Setting.WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
 	}
 
 	/**
@@ -774,20 +762,20 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private void savePreference() {
 		debug("Saving preference...");
 		Parameters params = mCamera.getParameters();
-		Editor editor = getSharedPreferences(TAG, Context.MODE_PRIVATE).edit();
-		editor.putString(PREFS_EFFECT, params.getColorEffect());
+		Editor editor = getSharedPreferences(Setting.NAME, Context.MODE_PRIVATE).edit();
+		editor.putString(Setting.EFFECT, params.getColorEffect());
 		Size size = params.getPictureSize();
 		if (size != null) {
-			editor.putInt(PREFS_WIDTH, size.width);
-			editor.putInt(PREFS_HEIGHT, size.height);
+			editor.putInt(Setting.WIDTH, size.width);
+			editor.putInt(Setting.HEIGHT, size.height);
 		}
-		editor.putString(PREFS_WHITE_BALANCE, params.getWhiteBalance());
-		editor.putInt(PREFS_ZOOM, params.getZoom());
-		editor.putInt(PREFS_DELAY, mDelay);
-		editor.putInt(PREFS_INTERVAL, mInterval);
-		editor.putInt(PREFS_FPS, mFPS);
-		editor.putInt(PREFS_QUALITY, mQuality);
-		editor.putString(PREFS_WORK_DIRECTORY, mPath);
+		editor.putString(Setting.WHITE_BALANCE, params.getWhiteBalance());
+		editor.putInt(Setting.ZOOM, params.getZoom());
+		editor.putInt(Setting.DELAY, mDelay);
+		editor.putInt(Setting.INTERVAL, mInterval);
+		editor.putInt(Setting.FPS, mFPS);
+		editor.putInt(Setting.QUALITY, mQuality);
+		editor.putString(Setting.WORK_DIRECTORY, mPath);
 		editor.apply();
 	}
 
