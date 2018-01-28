@@ -30,4 +30,14 @@
 	<string name="warnPlayingContent">Не все проигрыватели в Android могут воспроизводить видео в кодеке MJPEG, которым
 		кодирует это приложение видео. Попробуйте VLC или открыть видео на ПК.
 	</string>
+	<string name="settingImageHandler">Обработчик</string>
+	<string name="settingVideoMode">Режим записи</string>
+	<string-array name="settingVideoRecordMode">
+		<item>видео (.avi файл, кодек MJPEG)</item>
+		<item>фотографии (.jpg файлы в директории)</item>
+	</string-array>
+	<string-array name="settingImageHandler">
+		<item>нет</item>
+		<item>вставлять дату и время</item>
+	</string-array>
 </resources>
