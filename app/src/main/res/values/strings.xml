@@ -36,5 +36,10 @@
 
 	<string name="errorPermission">Not all permissions are accepted</string>
 	<string name="holderGrantAccess">Please, make permissions</string>
+	<string name="warnPlayingTitle">Warning!</string>
+	<string name="warnPlayingOK">Understand</string>
+	<string name="warnPlayingContent">Not all players in Android can play video in MJPEG codec, which write videos by
+		this application. Try VLC or open video on PC.
+	</string>
 
 </resources>

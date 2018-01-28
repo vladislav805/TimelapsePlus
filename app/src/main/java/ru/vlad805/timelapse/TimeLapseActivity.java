@@ -65,6 +65,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private String mPath = null;
 	private int mQuality;
 
+	private int mIntro;
+
 	private CaptureState mState = CaptureState.IDLE;
 
 	/**
@@ -84,6 +86,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mAudioManager = (AudioManager) getSystemService("audio");
 		mWakeLock = ((PowerManager) getSystemService("power")).newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
 		mRoot = new File(mPath);
+
+		checkIntro();
 
 		initSurfaceView();
 	}
@@ -222,6 +226,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mFPS = settings.getInt(Setting.FPS, 25);
 		mQuality = settings.getInt(Setting.QUALITY, 70);
 		mPath = settings.getString(Setting.WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
+		mIntro = settings.getInt(Setting.INTRO, 0);
 	}
 
 	/**
@@ -730,6 +735,23 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 				.show();
 	}
 
+	private void checkIntro() {
+		if ((mIntro & Setting.INTRO_ABOUT_PLAYING) == 0) {
+			new Builder(this)
+					.setTitle(R.string.warnPlayingTitle)
+					.setMessage(R.string.warnPlayingContent)
+					.setPositiveButton(R.string.warnPlayingOK, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialogInterface, int i) {
+							mIntro |= Setting.INTRO_ABOUT_PLAYING;
+						}
+					})
+					.create()
+					.show();
+		}
+	}
+
+
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == 4) {
 			showQuitDialog();
@@ -776,6 +798,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		editor.putInt(Setting.FPS, mFPS);
 		editor.putInt(Setting.QUALITY, mQuality);
 		editor.putString(Setting.WORK_DIRECTORY, mPath);
+		editor.putInt(Setting.INTRO, mIntro);
 		editor.apply();
 	}
 
