@@ -2,11 +2,8 @@ package ru.vlad805.timelapse;
 
 import android.Manifest;
 import android.app.AlertDialog.Builder;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
@@ -17,7 +14,6 @@ import android.hardware.Camera.Size;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.provider.Settings;
@@ -30,7 +26,6 @@ import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.*;
-import android.widget.AdapterView.OnItemSelectedListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,7 +33,7 @@ import java.io.IOException;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
-public class TimeLapseActivity extends AppCompatActivity implements Callback, OnClickListener, PictureCallback {
+public class TimeLapseActivity extends AppCompatActivity implements Callback, OnClickListener, PictureCallback, SettingsDialog.OnSettingsChanged {
 
 	private static final boolean DEBUG = true;
 
@@ -58,18 +53,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private TextView mtvPrefsCapture;
 	private FloatingActionButton mButtonToggle;
 
-	private int mWidth = 0;
-	private int mHeight = 0;
-	private int mDelay;
-	private int mFPS;
-	private int mInterval;
-
-	private String mBalance = "";
-	private String mEffect = "";
-	private String mPath = null;
-	private int mQuality;
-
-	private int mIntro;
+	private SettingsBundle mSettings;
 
 	private CaptureState mState = CaptureState.IDLE;
 
@@ -83,13 +67,14 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.activity_main);
 
-		loadPreferences();
-		initDirectory();
+
 
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 		mAudioManager = (AudioManager) getSystemService("audio");
 		mWakeLock = ((PowerManager) getSystemService("power")).newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
-		mRoot = new File(mPath);
+		mSettings = new SettingsBundle(this).load();
+		mRoot = new File(mSettings.getPath());
+		initDirectory();
 
 		checkIntro();
 
@@ -143,7 +128,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		@Override
 		public void onAutoFocus(boolean b, Camera camera) {
 			mTimer = new Timer();
-			mTimer.schedule(new CaptureTask(), (long) mDelay);
+			mTimer.schedule(new CaptureTask(), (long) mSettings.getDelay());
 		}
 	};
 
@@ -151,7 +136,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 * Create working directory if not exists
 	 */
 	private void initDirectory() {
-		File path = new File(this.mPath);
+		File path = new File(mSettings.getPath());
 
 		if (path.exists()) {
 			debug("Path Exists: " + path.getAbsolutePath());
@@ -170,7 +155,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mtvFramesCount.setText(String.format(
 				getString(R.string.mainFramesCount),
 				mVideoRecorder.getFrameCount(),
-				(int) (mVideoRecorder.getFrameCount() / mFPS),
+				(int) (mVideoRecorder.getFrameCount() / mSettings.getFPS()),
 				(int) (mVideoRecorder.getFileSize() / Math.pow(2, 20)),
 				(int) (mRoot.getFreeSpace() / Math.pow(2, 20))
 		));
@@ -182,9 +167,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 				getString(R.string.mainMediaInfo),
 				s.width,
 				s.height,
-				mFPS,
-				mQuality,
-				mInterval
+				mSettings.getFPS(),
+				mSettings.getInterval()
 		));
 	}
 
@@ -210,27 +194,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mButtonToggle.setOnClickListener(this);
 
 		findViewById(R.id.settingsButton).setOnClickListener(this);
-
-		/*findViewById(R.id.openImageSettings).setOnClickListener(this);
-		findViewById(R.id.openVideoSettings).setOnClickListener(this);*/
-	}
-
-	/**
-	 * Fetch settings from shared prefs
-	 */
-	private void loadPreferences() {
-		debug("Loading preference...");
-		SharedPreferences settings = getSharedPreferences(Setting.NAME, Context.MODE_PRIVATE);
-		mEffect = settings.getString(Setting.EFFECT, "");
-		mWidth = settings.getInt(Setting.WIDTH, 0);
-		mHeight = settings.getInt(Setting.HEIGHT, 0);
-		mBalance = settings.getString(Setting.WHITE_BALANCE, "");
-		mDelay = settings.getInt(Setting.DELAY, 3000);
-		mInterval = settings.getInt(Setting.INTERVAL, 5000);
-		mFPS = settings.getInt(Setting.FPS, 25);
-		mQuality = settings.getInt(Setting.QUALITY, 70);
-		mPath = settings.getString(Setting.WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
-		mIntro = settings.getInt(Setting.INTRO, 0);
 	}
 
 	/**
@@ -270,9 +233,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	/**
 	 * Resize surface view
-	 * @param camSize size of camera
 	 */
-	private void resizePreviewView(Size camSize) {
+	private void resizePreviewView(int sw, int sh) {
 		View container = findViewById(R.id.linearLayoutPreview);
 
 		if (container == null) {
@@ -280,7 +242,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 
 		int cw = container.getWidth(), ch = container.getHeight();
-		int sw = camSize.width, sh = camSize.height;
 		int pw, ph;
 		double cc = ch / cw, sc = sh / sw, sp;
 
@@ -342,21 +303,21 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 
 		Parameters params = mCamera.getParameters();
-		params.setJpegQuality(mQuality);
+		params.setJpegQuality(mSettings.getQuality());
 
-		if (!mBalance.isEmpty()) {
-			params.setWhiteBalance(mBalance);
+		if (!mSettings.getBalance().isEmpty()) {
+			params.setWhiteBalance(mSettings.getBalance());
 		}
 
-		if (!mEffect.isEmpty()) {
-			params.setColorEffect(mEffect);
+		if (!mSettings.getEffect().isEmpty()) {
+			params.setColorEffect(mSettings.getEffect());
 		}
 
-		if (!(mWidth == 0 || mHeight == 0)) {
-			params.setPictureSize(mWidth, mHeight);
-			Size targetPreviewSize = getOptimalPreviewSize(params.getSupportedPreviewSizes(), mWidth, mHeight);
+		if (!(mSettings.getWidth() == 0 || mSettings.getHeight() == 0)) {
+			params.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
+			Size targetPreviewSize = getOptimalPreviewSize(params.getSupportedPreviewSizes(), mSettings.getWidth(), mSettings.getHeight());
 			params.setPreviewSize(targetPreviewSize.width, targetPreviewSize.height);
-			resizePreviewView(targetPreviewSize);
+			resizePreviewView(targetPreviewSize.width, targetPreviewSize.height);
 		}
 		mCamera.setParameters(params);
 	}
@@ -390,12 +351,12 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		debug("surfaceChanged: " + w + " x " + h);
 		Parameters params = mCamera.getParameters();
 
-		if (!mBalance.isEmpty()) {
-			params.setWhiteBalance(mBalance);
+		if (!mSettings.getBalance().isEmpty()) {
+			params.setWhiteBalance(mSettings.getBalance());
 		}
 
-		if (!mEffect.isEmpty()) {
-			params.setColorEffect(mEffect);
+		if (!mSettings.getEffect().isEmpty()) {
+			params.setColorEffect(mSettings.getEffect());
 		}
 
 		mCamera.setParameters(params);
@@ -432,7 +393,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		setCurrentSettingsPreview();
 
-		mVideoRecorder = new VideoRecorder(String.format("%s%s.avi", mPath, getTimeStamp()), size.width, size.height, (double) mFPS);
+		mVideoRecorder = new VideoRecorder(String.format("%s%s.avi", mSettings.getPath(), getTimeStamp()), size.width, size.height, (double) mSettings.getFPS());
 		mCamera.autoFocus(mStartCaptureAfterAutoFocus);
 	}
 
@@ -459,6 +420,49 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			mVideoRecorder.close();
 		}
 		mVideoRecorder = null;
+	}
+
+	@Override
+	public void onVideoPreferencesChanged() {
+		Log.i(TAG, "onVideoPreferencesChanged: ");
+		setCurrentSettingsPreview();
+	}
+
+	@Override
+	public void onImagePreferencesChanged() {
+		Log.i(TAG, "onImagePreferencesChanged: ");
+		Parameters p = mCamera.getParameters();
+
+		p.setColorEffect(mSettings.getEffect());
+		p.setWhiteBalance(mSettings.getBalance());
+		p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
+
+		mCamera.setParameters(p);
+	}
+
+	@Override
+	public void onSizeChanged(int width, int height) {
+		Log.i(TAG, "onSizeChanged: ");
+
+		List<Camera.Size> previewSizes = mCamera.getParameters().getSupportedPreviewSizes();
+
+		for (Camera.Size previewSize : previewSizes) {
+			float ratio = (((1.0f * ((float) width)) * ((float) previewSize.height)) / ((float) previewSize.width)) / ((float) height);
+			if (((double) ratio) > 0.92d && ((double) ratio) < 1.02d) {
+				mCamera.stopPreview();
+				mCamera.getParameters().setPreviewSize(previewSize.width, previewSize.height);
+				break;
+			}
+		}
+		resizePreviewView(width, height);
+		mCamera.getParameters().setPictureSize(width, height);
+		mCamera.startPreview();
+	}
+
+	@Override
+	public void onDirectoryChanged(String path) {
+		Log.i(TAG, "onDirectoryChanged: ");
+		initDirectory();
 	}
 
 	/**
@@ -501,7 +505,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 		toggleAudioMute(false);
 		if (mTimer != null) {
-			mTimer.schedule(new CaptureTask(), (long) mInterval);
+			mTimer.schedule(new CaptureTask(), (long) mSettings.getInterval());
 		}
 	}
 
@@ -530,208 +534,12 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 
 	private void openSettings() {
-		debug("open window");
-		View layout = ((LayoutInflater) getSystemService("layout_inflater")).inflate(R.layout.activity_settings, null);
-
-		TabHost tabHost = layout.findViewById(R.id.settingsTabsHost);
-		tabHost.setup();
-
-		tabHost.addTab(tabHost.newTabSpec("image").setContent(R.id.settingsTabImage).setIndicator(getString(R.string.settingTabImage)));
-		tabHost.addTab(tabHost.newTabSpec("video").setContent(R.id.settingsTabVideo).setIndicator(getString(R.string.settingTabVideo)));
-		tabHost.addTab(tabHost.newTabSpec("about").setContent(R.id.settingsTabAbout).setIndicator(getString(R.string.settingTabAbout)));
-
-		Parameters param = mCamera.getParameters();
-
-		final EditText editTextDelay = layout.findViewById(R.id.editTextDelay);
-		editTextDelay.setText(String.valueOf(mDelay));
-
-		final EditText editTextInterval = layout.findViewById(R.id.editTextInterval);
-		editTextInterval.setText(String.valueOf(mInterval));
-
-		final EditText editTextFPS = layout.findViewById(R.id.editTextFPS);
-		editTextFPS.setText(String.valueOf(mFPS));
-
-		final SeekBar seekFPS = layout.findViewById(R.id.editSeekFPS);
-		seekFPS.setProgress(mFPS - 15);
-		seekFPS.setMax(45);
-		seekFPS.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-				editTextFPS.setText(String.valueOf(seekBar.getProgress() + 15));
-			}
-
-			@Override public void onStartTrackingTouch(SeekBar seekBar) { }
-			@Override public void onStopTrackingTouch(SeekBar seekBar) { }
-		});
-
-		final SeekBar seekQuality = layout.findViewById(R.id.editTextQuality);
-		seekQuality.setProgress(mQuality);
-		seekQuality.setMax(100);
-
-		final EditText editTextPath = layout.findViewById(R.id.editTextPath);
-		editTextPath.setText(mPath);
-
-		((TextView) layout.findViewById(R.id.aboutVersion)).setText(String.format(getString(R.string.aboutVersion), BuildConfig.VERSION_NAME));
-
-		new Builder(this)
-				//.setTitle(R.string.settingsTitle)
-				.setView(layout)
-				.setPositiveButton(R.string.settingsSave, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialogInterface, int i) {
-						mDelay = getIntegerValue(editTextDelay, 3000);
-						mInterval = getIntegerValue(editTextInterval, 5000);
-						mFPS = getIntegerValue(editTextFPS, 15);
-						mFPS = Math.max(15, mFPS);
-						mFPS = Math.min(60, mFPS);
-						mQuality = seekQuality.getProgress();
-
-						String newPath = editTextPath.getText().toString();
-						if (!newPath.equals(mPath)) {
-							mPath = newPath;
-							initDirectory();
-						}
-						savePreference();
-						setCurrentSettingsPreview();
-					}
-				})
-				.create()
-				.show();
-		initSpinnerFilter(param, (Spinner) layout.findViewById(R.id.spinnerFilter));
-		initSpinnerSize(param, (Spinner) layout.findViewById(R.id.spinnerSize));
-		initSpinnerWhiteBalance(param, (Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
-		debug("opened window");
+		new SettingsDialog(this, mSettings, mCamera)
+				.setOnSettingsChanged(this)
+				.open();
 	}
 
 
-	private void initSpinnerFilter(final Parameters params, Spinner spinner) {
-		String curEffect = params.getColorEffect();
-		final List<String> effectList = params.getSupportedColorEffects();
-		if (effectList != null) {
-			ArrayAdapter<String> filterArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, effectList.toArray(new String[effectList.size()]));
-			filterArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinner.setAdapter(filterArrayAdapter);
-			for (int i = 0; i < effectList.size(); i++) {
-				if (curEffect.equals(effectList.get(i))) {
-					spinner.setSelection(i);
-				}
-			}
-			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
-				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-					TimeLapseActivity.this.mEffect = effectList.get(position);
-					params.setColorEffect(TimeLapseActivity.this.mEffect);
-					setCameraParams(params);
-				}
-
-				public void onNothingSelected(AdapterView<?> adapterView) {
-				}
-			});
-		}
-	}
-
-	private void initSpinnerSize(Parameters param, Spinner spinner) {
-		final List<Size> sizeList = param.getSupportedPictureSizes();
-		final List<Size> previewSizes = param.getSupportedPreviewSizes();
-
-		final Size curSize = param.getPictureSize();
-
-		if (curSize != null && sizeList != null) {
-			int i;
-			debug("--- Current Picture Size: " + curSize.width + "x" + curSize.height);
-			String[] sizeArray = new String[sizeList.size()];
-
-			for (i = 0; i < sizeList.size(); i++) {
-				sizeArray[i] = sizeList.get(i).width + "x" + sizeList.get(i).height;
-			}
-
-			ArrayAdapter<String> sizeArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, sizeArray);
-			sizeArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinner.setAdapter(sizeArrayAdapter);
-			i = 0;
-
-			while (i < sizeList.size()) {
-				if (curSize.width == sizeList.get(i).width && curSize.height == sizeList.get(i).height) {
-					spinner.setSelection(i);
-				}
-				i++;
-			}
-
-			final Parameters parameters = param;
-			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
-				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-					Size targetSize = sizeList.get(position);
-					mWidth = targetSize.width;
-					mHeight = targetSize.height;
-					if (targetSize.width == curSize.width && targetSize.height == curSize.height) {
-						debug("No need to change!");
-						return;
-					}
-					for (Size previewSize : previewSizes) {
-						float ratio = (((1.0f * ((float) targetSize.width)) * ((float) previewSize.height)) / ((float) previewSize.width)) / ((float) targetSize.height);
-						if (((double) ratio) > 0.92d && ((double) ratio) < 1.02d) {
-							mCamera.stopPreview();
-							parameters.setPreviewSize(previewSize.width, previewSize.height);
-							break;
-						}
-					}
-					resizePreviewView(targetSize);
-					parameters.setPictureSize(targetSize.width, targetSize.height);
-					setCameraParams(parameters);
-					mCamera.startPreview();
-				}
-
-				public void onNothingSelected(AdapterView<?> adapterView) {
-				}
-			});
-		}
-	}
-
-	private void initSpinnerWhiteBalance(final Parameters params, Spinner spinner) {
-		String curBalance = params.getWhiteBalance();
-
-		final List<String> balanceList = params.getSupportedWhiteBalance();
-
-		if (balanceList != null) {
-			ArrayAdapter<String> balanceArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, balanceList.toArray(new String[balanceList.size()]));
-			balanceArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinner.setAdapter(balanceArrayAdapter);
-
-			for (int i = 0; i < balanceList.size(); i++) {
-				if (curBalance.equals(balanceList.get(i))) {
-					spinner.setSelection(i);
-				}
-			}
-
-			spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
-				public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-					mBalance = balanceList.get(position);
-					params.setWhiteBalance(TimeLapseActivity.this.mBalance);
-					setCameraParams(params);
-				}
-
-				public void onNothingSelected(AdapterView<?> adapterView) {
-				}
-			});
-		}
-	}
-
-	private void setCameraParams(Parameters params) {
-		try {
-			mCamera.setParameters(params);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		setCurrentSettingsPreview();
-	}
-
-	private int getIntegerValue(EditText inputBox, int defaultValue) {
-		int output = defaultValue;
-		try {
-			output = Integer.parseInt(inputBox.getText().toString());
-		} catch (Exception ignored) {
-		}
-		return output;
-	}
 
 	/**
 	 * Quit dialog
@@ -752,14 +560,14 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	}
 
 	private void checkIntro() {
-		if ((mIntro & Setting.INTRO_ABOUT_PLAYING) == 0) {
+		if ((mSettings.getIntro() & Setting.INTRO_ABOUT_PLAYING) == 0) {
 			new Builder(this)
 					.setTitle(R.string.warnPlayingTitle)
 					.setMessage(R.string.warnPlayingContent)
 					.setPositiveButton(R.string.warnPlayingOK, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialogInterface, int i) {
-							mIntro |= Setting.INTRO_ABOUT_PLAYING;
+							mSettings.setIntro(mSettings.getIntro() | Setting.INTRO_ABOUT_PLAYING);
 						}
 					})
 					.create()
@@ -799,23 +607,16 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 */
 	private void savePreference() {
 		debug("Saving preference...");
+
 		Parameters params = mCamera.getParameters();
-		Editor editor = getSharedPreferences(Setting.NAME, Context.MODE_PRIVATE).edit();
-		editor.putString(Setting.EFFECT, params.getColorEffect());
+		mSettings.setBalance(params.getWhiteBalance()).setEffect(params.getColorEffect());
+
 		Size size = params.getPictureSize();
 		if (size != null) {
-			editor.putInt(Setting.WIDTH, size.width);
-			editor.putInt(Setting.HEIGHT, size.height);
+			mSettings.setWidth(size.width).setHeight(size.height);
 		}
-		editor.putString(Setting.WHITE_BALANCE, params.getWhiteBalance());
-		editor.putInt(Setting.ZOOM, params.getZoom());
-		editor.putInt(Setting.DELAY, mDelay);
-		editor.putInt(Setting.INTERVAL, mInterval);
-		editor.putInt(Setting.FPS, mFPS);
-		editor.putInt(Setting.QUALITY, mQuality);
-		editor.putString(Setting.WORK_DIRECTORY, mPath);
-		editor.putInt(Setting.INTRO, mIntro);
-		editor.apply();
+
+		mSettings.save();
 	}
 
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {

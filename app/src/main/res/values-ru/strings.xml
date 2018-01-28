@@ -10,7 +10,7 @@
 	<string name="mainFramesCount">Кадр %1$d/%2$dс; %3$dМБ, ост. %4$dМБ</string>
 	<string name="mainFramesCountFinished">Сохранено.</string>
 	<string name="mainFramesCountReady">Готов</string>
-	<string name="mainMediaInfo">%1$dx%2$d@%3$d q%4$d; инт %5$dмс</string>
+	<string name="mainMediaInfo">%1$dx%2$d@%3$dfps; инт %4$dмс</string>
 	<string name="settingImageFilter">Фильтр</string>
 	<string name="settingImageQuality">Качество</string>
 	<string name="settingImageSize">Разрешение</string>
