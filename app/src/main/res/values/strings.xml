@@ -6,6 +6,7 @@
 	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
 	<string name="mainMediaInfo">%1$dx%2$d@%3$dfps; %4$dms</string>
 	<string name="mainFramesCountReady">Ready</string>
+	<string name="mainBatteryLevel">Battery: %d%%</string>
 
 	<string name="exitDialogTitle">Confirm</string>
 	<string name="exitDialogQuestion">Are you sure to quit?</string>
@@ -30,6 +31,12 @@
 	<string name="settingVideoCaptureIntervalDefaultValue" translatable="false">5000</string>
 	<string name="settingVideoDelayDefaultValue" translatable="false">3000</string>
 	<string name="settingVideoPath">Path</string>
+	<string name="settingImageFlash">Flash mode</string>
+	<string name="settingVideoMode">Record mode</string>
+	<string-array name="settingVideoRecordMode">
+		<item>video (.avi file, MJPEG codec)</item>
+		<item>photos (.jpg files in directory)</item>
+	</string-array>
 
 	<string name="aboutVersion" translatable="false">ver. %s</string>
 	<string name="aboutDevelopers">ExplorerDC © 2011\nVladislav Veluga © 2018</string>
@@ -38,10 +45,7 @@
 	<string name="holderGrantAccess">Please, make permissions</string>
 	<string name="warnPlayingTitle">Warning!</string>
 	<string name="warnPlayingOK">Understand</string>
-	<string name="warnPlayingContent">Not all players in Android can play video in MJPEG codec, which write videos by
-		this application. Try VLC or open video on PC.
-	</string>
-	<string name="settingImageFlash">Flash mode</string>
-	<string name="mainBatteryLevel">Battery: %d%%</string>
+	<string name="warnPlayingContent">Not all players in Android can play video in MJPEG codec, which write videos by this application. Try VLC or open video on PC.</string>
+
 
 </resources>

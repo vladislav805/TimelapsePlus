@@ -46,7 +46,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private WakeLock mWakeLock;
 	private Camera mCamera;
 	private SurfaceHolder mSurfaceHolder;
-	private VideoRecorder mVideoRecorder;
+	private IRecorder mVideoRecorder;
 	private Timer mTimer;
 	private File mRoot;
 
@@ -416,7 +416,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		setCurrentSettingsPreview();
 
-		mVideoRecorder = new VideoRecorder(String.format("%s%s.avi", mSettings.getPath(), getTimeStamp()), size.width, size.height, (double) mSettings.getFPS());
+		switch (mSettings.getRecordMode()) {
+			case Setting.RecordMode.VIDEO:
+				mVideoRecorder = new VideoRecorder(mSettings.getPath(), String.format("%s.avi", getTimeStamp()), size.width, size.height, (double) mSettings.getFPS());
+				break;
+
+			case Setting.RecordMode.PHOTO_DIR:
+				mVideoRecorder = new PictureRecorder(mSettings.getPath(), getTimeStamp());
+		}
+
 		mCamera.autoFocus(mStartCaptureAfterAutoFocus);
 	}
 
@@ -440,7 +448,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			mTimer = null;
 		}
 		if (mVideoRecorder != null) {
-			mVideoRecorder.close();
+			mVideoRecorder.stop();
 		}
 		mVideoRecorder = null;
 	}

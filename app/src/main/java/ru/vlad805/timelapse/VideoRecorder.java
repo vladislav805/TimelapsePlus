@@ -2,19 +2,19 @@ package ru.vlad805.timelapse;
 
 import java.io.File;
 
-public class VideoRecorder {
+public class VideoRecorder implements IRecorder {
 	private int mFrameCount = 0;
 	private MotionJpegGenerator mVideo = null;
 
-	public VideoRecorder(String filename, int width, int height, double framerate) {
+	public VideoRecorder(String path, String filename, int width, int height, double framerate) {
 		try {
-			mVideo = new MotionJpegGenerator(new File(filename), width, height, framerate, 1000);
+			mVideo = new MotionJpegGenerator(new File(path + File.separator + filename), width, height, framerate, 1000);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void close() {
+	public void stop() {
 		try {
 			mVideo.finishAVI();
 			mVideo.fixAVI(mFrameCount);

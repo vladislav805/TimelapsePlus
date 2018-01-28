@@ -14,6 +14,7 @@ public class SettingsBundle {
 	private int mDelay;
 	private int mFPS;
 	private int mInterval;
+	private int mRecordMode;
 
 	private String mBalance = "";
 	private String mEffect = "";
@@ -40,6 +41,7 @@ public class SettingsBundle {
 		mFlash = settings.getString(Setting.FLASH_MODE, "");
 		mPath = settings.getString(Setting.WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
 		mIntro = settings.getInt(Setting.INTRO, 0);
+		mRecordMode = settings.getInt(Setting.RECORD_MODE, Setting.RecordMode.VIDEO);
 		return this;
 	}
 	
@@ -56,6 +58,7 @@ public class SettingsBundle {
 		editor.putString(Setting.FLASH_MODE, mFlash);
 		editor.putString(Setting.WORK_DIRECTORY, mPath);
 		editor.putInt(Setting.INTRO, mIntro);
+		editor.putInt(Setting.RECORD_MODE, mRecordMode);
 		editor.apply();
 		return this;
 	}
@@ -88,6 +91,10 @@ public class SettingsBundle {
 
 	public int getQuality() {
 		return mQuality;
+	}
+
+	public int getRecordMode() {
+		return mRecordMode;
 	}
 
 	public String getFlashMode() {
@@ -160,6 +167,11 @@ public class SettingsBundle {
 
 	public SettingsBundle setFlashMode(String mode) {
 		mFlash = mode;
+		return this;
+	}
+
+	public SettingsBundle setRecordMode(int mode) {
+		mRecordMode = mode;
 		return this;
 	}
 

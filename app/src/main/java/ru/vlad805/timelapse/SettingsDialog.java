@@ -12,9 +12,6 @@ import android.widget.*;
 
 import java.util.List;
 
-/**
- * vlad805 (c) 2018
- */
 @SuppressWarnings("deprecation")
 public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogInterface.OnClickListener, AdapterView.OnItemSelectedListener, DialogInterface.OnCancelListener, View.OnKeyListener {
 
@@ -37,6 +34,11 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	private List<Camera.Size> mSizesList;
 
 	private List<String> mFlashesList;
+
+	private int mRecordMode[] = {
+			Setting.RecordMode.VIDEO,
+			Setting.RecordMode.PHOTO_DIR
+	};
 
 	private OnSettingsChanged mOnSettingsChanged = null;
 
@@ -92,6 +94,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		initSpinnerSize((Spinner) layout.findViewById(R.id.spinnerSize));
 		initSpinnerWhiteBalance((Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
 		initSpinnerFlash((Spinner) layout.findViewById(R.id.spinnerFlash));
+		initSpinnerRecordMove((Spinner) layout.findViewById(R.id.spinnerMode));
 
 		new Builder(mContext).setView(layout).setPositiveButton(R.string.settingsSave, this).setOnCancelListener(this).create().show();
 	}
@@ -181,6 +184,22 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 		for (int i = 0; i < mFlashesList.size(); i++) {
 			if (curMode.equals(mFlashesList.get(i))) {
+				spinner.setSelection(i);
+				break;
+			}
+		}
+
+		spinner.setOnItemSelectedListener(this);
+	}
+
+	private void initSpinnerRecordMove(Spinner spinner) {
+		String variants[] = mContext.getResources().getStringArray(R.array.settingVideoRecordMode);
+		ArrayAdapter adapter = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, variants);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinner.setAdapter(adapter);
+
+		for (int i = 0; i < mRecordMode.length; i++) {
+			if (mRecordMode[i] == mSettings.getRecordMode()) {
 				spinner.setSelection(i);
 				break;
 			}
@@ -283,6 +302,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				if (mOnSettingsChanged != null) {
 					mOnSettingsChanged.onImagePreferencesChanged();
 				}
+				break;
+
+			case R.id.spinnerMode:
+				mSettings.setRecordMode(mRecordMode[position]);
 				break;
 		}
 	}

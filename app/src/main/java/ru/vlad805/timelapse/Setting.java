@@ -16,6 +16,13 @@ abstract public class Setting {
 	public static final String ZOOM = "ZOOM";
 	public static final String WORK_DIRECTORY = "PATH";
 	public static final String FLASH_MODE = "FLASH_MODE";
+	public static final String RECORD_MODE = "RECORD_MODE";
 
 	public static final int INTRO_ABOUT_PLAYING = 0x1;
+	public static final int TLIF_VERSION = 1;
+
+	public class RecordMode {
+		public static final int VIDEO = 0x1;
+		public static final int PHOTO_DIR = 0x2;
+	}
 }
