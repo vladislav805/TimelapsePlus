@@ -37,6 +37,11 @@
 		<item>video (.avi file, MJPEG codec)</item>
 		<item>photos (.jpg files in directory)</item>
 	</string-array>
+	<string name="settingImageHandler">Handler</string>
+	<string-array name="settingImageHandler">
+		<item>none</item>
+		<item>insert date and time</item>
+	</string-array>
 
 	<string name="aboutVersion" translatable="false">ver. %s</string>
 	<string name="aboutDevelopers">ExplorerDC © 2011\nVladislav Veluga © 2018</string>

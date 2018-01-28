@@ -17,6 +17,7 @@ abstract public class Setting {
 	public static final String WORK_DIRECTORY = "PATH";
 	public static final String FLASH_MODE = "FLASH_MODE";
 	public static final String RECORD_MODE = "RECORD_MODE";
+	public static final String HANDLER = "HANDLER";
 
 	public static final int INTRO_ABOUT_PLAYING = 0x1;
 	public static final int TLIF_VERSION = 1;
@@ -24,5 +25,10 @@ abstract public class Setting {
 	public class RecordMode {
 		public static final int VIDEO = 0x1;
 		public static final int PHOTO_DIR = 0x2;
+	}
+
+	public class ImageHandler {
+		public static final int NONE = 0;
+		public static final int INSERT_DATE_AND_TIME = 1;
 	}
 }

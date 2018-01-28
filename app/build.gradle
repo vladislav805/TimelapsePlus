@@ -8,7 +8,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 26
         versionCode 2
-        versionName "2.0-RC3"
+        versionName "2.0-RC4"
         vectorDrawables.useSupportLibrary = true
     }
     buildTypes {

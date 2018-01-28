@@ -20,6 +20,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	private SettingsBundle mSettings;
 	private Camera mCamera;
 
+	private View mRoot;
 	private EditText editTextDelay;
 	private EditText editTextInterval;
 	private EditText editTextFPS;
@@ -40,6 +41,11 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 			Setting.RecordMode.PHOTO_DIR
 	};
 
+	private int mImageHandler[] = {
+			Setting.ImageHandler.NONE,
+			Setting.ImageHandler.INSERT_DATE_AND_TIME
+	};
+
 	private OnSettingsChanged mOnSettingsChanged = null;
 
 	@SuppressWarnings("UnnecessaryInterfaceModifier")
@@ -57,46 +63,47 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	}
 
 	public void open() {
-		View layout = ((LayoutInflater) mContext.getSystemService("layout_inflater")).inflate(R.layout.activity_settings, null);
+		mRoot = ((LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.activity_settings, null);
 
-		TabHost tabHost = layout.findViewById(R.id.settingsTabsHost);
+		TabHost tabHost = mRoot.findViewById(R.id.settingsTabsHost);
 		tabHost.setup();
 
 		tabHost.addTab(tabHost.newTabSpec("image").setContent(R.id.settingsTabImage).setIndicator(mContext.getString(R.string.settingTabImage)));
 		tabHost.addTab(tabHost.newTabSpec("video").setContent(R.id.settingsTabVideo).setIndicator(mContext.getString(R.string.settingTabVideo)));
 		tabHost.addTab(tabHost.newTabSpec("about").setContent(R.id.settingsTabAbout).setIndicator(mContext.getString(R.string.settingTabAbout)));
 
-		editTextDelay = layout.findViewById(R.id.editTextDelay);
+		editTextDelay = mRoot.findViewById(R.id.editTextDelay);
 		editTextDelay.setText(String.valueOf(mSettings.getDelay()));
 
-		editTextInterval = layout.findViewById(R.id.editTextInterval);
+		editTextInterval = mRoot.findViewById(R.id.editTextInterval);
 		editTextInterval.setText(String.valueOf(mSettings.getInterval()));
 
-		editTextFPS = layout.findViewById(R.id.editTextFPS);
+		editTextFPS = mRoot.findViewById(R.id.editTextFPS);
 		editTextFPS.setText(String.valueOf(mSettings.getFPS()));
 		editTextFPS.setOnKeyListener(this);
 
-		seekFPS = layout.findViewById(R.id.editSeekFPS);
+		seekFPS = mRoot.findViewById(R.id.editSeekFPS);
 		seekFPS.setProgress(mSettings.getFPS() - 15);
 		seekFPS.setMax(45);
 		seekFPS.setOnSeekBarChangeListener(this);
 
-		seekQuality = layout.findViewById(R.id.editTextQuality);
+		seekQuality = mRoot.findViewById(R.id.editTextQuality);
 		seekQuality.setProgress(mSettings.getQuality());
 		seekQuality.setMax(100);
 
-		editTextPath = layout.findViewById(R.id.editTextPath);
+		editTextPath = mRoot.findViewById(R.id.editTextPath);
 		editTextPath.setText(mSettings.getPath());
 
-		((TextView) layout.findViewById(R.id.aboutVersion)).setText(String.format(mContext.getString(R.string.aboutVersion), BuildConfig.VERSION_NAME));
+		((TextView) mRoot.findViewById(R.id.aboutVersion)).setText(String.format(mContext.getString(R.string.aboutVersion), BuildConfig.VERSION_NAME));
 
-		initSpinnerFilter((Spinner) layout.findViewById(R.id.spinnerFilter));
-		initSpinnerSize((Spinner) layout.findViewById(R.id.spinnerSize));
-		initSpinnerWhiteBalance((Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
-		initSpinnerFlash((Spinner) layout.findViewById(R.id.spinnerFlash));
-		initSpinnerRecordMove((Spinner) layout.findViewById(R.id.spinnerMode));
+		initSpinnerFilter((Spinner) mRoot.findViewById(R.id.spinnerFilter));
+		initSpinnerSize((Spinner) mRoot.findViewById(R.id.spinnerSize));
+		initSpinnerWhiteBalance((Spinner) mRoot.findViewById(R.id.spinnerWhiteBalance));
+		initSpinnerFlash((Spinner) mRoot.findViewById(R.id.spinnerFlash));
+		initSpinnerRecordMove((Spinner) mRoot.findViewById(R.id.spinnerMode));
+		initSpinnerImageHandler((Spinner) mRoot.findViewById(R.id.spinnerHandler));
 
-		new Builder(mContext).setView(layout).setPositiveButton(R.string.settingsSave, this).setOnCancelListener(this).create().show();
+		new Builder(mContext).setView(mRoot).setPositiveButton(R.string.settingsSave, this).setOnCancelListener(this).create().show();
 	}
 
 	private int getIntegerValue(EditText inputBox, int defaultValue) {
@@ -113,13 +120,11 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		mEffectsList = mCamera.getParameters().getSupportedColorEffects();
 
 		if (mEffectsList == null) {
+			mRoot.findViewById(R.id.settingsRowFilter).setVisibility(View.GONE);
 			return;
 		}
 
-		ArrayAdapter mEffects = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, mEffectsList.toArray(new String[mEffectsList.size()]));
-		mEffects.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinner.setAdapter(mEffects);
-
+		initBaseSpinner(spinner, mEffectsList.toArray(new String[mEffectsList.size()]));
 		for (int i = 0; i < mEffectsList.size(); i++) {
 			if (curEffect.equals(mEffectsList.get(i))) {
 				spinner.setSelection(i);
@@ -139,9 +144,8 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				sizeArray[i] = mSizesList.get(i).width + "x" + mSizesList.get(i).height;
 			}
 
-			ArrayAdapter mSizes = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, sizeArray);
-			mSizes.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinner.setAdapter(mSizes);
+
+			initBaseSpinner(spinner, sizeArray);
 			for (int i = 0; i < mSizesList.size(); ++i) {
 				if (curSize.width == mSizesList.get(i).width && curSize.height == mSizesList.get(i).height) {
 					spinner.setSelection(i);
@@ -156,17 +160,18 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		String curBalance = mCamera.getParameters().getWhiteBalance();
 		mBalancesList = mCamera.getParameters().getSupportedWhiteBalance();
 
-		if (mBalancesList != null) {
-			ArrayAdapter mBalances = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, mBalancesList.toArray(new String[mBalancesList.size()]));
-			mBalances.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-			spinner.setAdapter(mBalances);
-			for (int i = 0; i < mBalancesList.size(); i++) {
-				if (curBalance.equals(mBalancesList.get(i))) {
-					spinner.setSelection(i);
-					break;
-				}
+		if (mBalancesList == null) {
+			mRoot.findViewById(R.id.settingsRowWhiteBalance).setVisibility(View.GONE);
+			return;
+		}
+
+		initBaseSpinner(spinner, mBalancesList.toArray(new String[mBalancesList.size()]));
+
+		for (int i = 0; i < mBalancesList.size(); i++) {
+			if (curBalance.equals(mBalancesList.get(i))) {
+				spinner.setSelection(i);
+				break;
 			}
-			spinner.setOnItemSelectedListener(this);
 		}
 	}
 
@@ -175,12 +180,11 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		mFlashesList = mCamera.getParameters().getSupportedFlashModes();
 
 		if (mFlashesList == null) {
+			mRoot.findViewById(R.id.settingsFlash).setVisibility(View.GONE);
 			return;
 		}
 
-		ArrayAdapter mFlashes = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, mFlashesList.toArray(new String[mFlashesList.size()]));
-		mFlashes.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinner.setAdapter(mFlashes);
+		initBaseSpinner(spinner, mFlashesList.toArray(new String[mFlashesList.size()]));
 
 		for (int i = 0; i < mFlashesList.size(); i++) {
 			if (curMode.equals(mFlashesList.get(i))) {
@@ -188,15 +192,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				break;
 			}
 		}
-
-		spinner.setOnItemSelectedListener(this);
 	}
 
 	private void initSpinnerRecordMove(Spinner spinner) {
-		String variants[] = mContext.getResources().getStringArray(R.array.settingVideoRecordMode);
-		ArrayAdapter adapter = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, variants);
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinner.setAdapter(adapter);
+		initBaseSpinner(spinner, R.array.settingVideoRecordMode);
 
 		for (int i = 0; i < mRecordMode.length; i++) {
 			if (mRecordMode[i] == mSettings.getRecordMode()) {
@@ -204,7 +203,27 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				break;
 			}
 		}
+	}
 
+	private void initSpinnerImageHandler(Spinner spinner) {
+		initBaseSpinner(spinner, R.array.settingImageHandler);
+
+		for (int i = 0; i < mImageHandler.length; i++) {
+			if (mImageHandler[i] == mSettings.getImageHandler()) {
+				spinner.setSelection(i);
+				break;
+			}
+		}
+	}
+
+	private void initBaseSpinner(Spinner spinner, int resourceId) {
+		initBaseSpinner(spinner, mContext.getResources().getStringArray(resourceId));
+	}
+
+	private void initBaseSpinner(Spinner spinner, String variants[]) {
+		ArrayAdapter adapter = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, variants);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinner.setAdapter(adapter);
 		spinner.setOnItemSelectedListener(this);
 	}
 
@@ -221,10 +240,6 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		mSettings.setInterval(getIntegerValue(editTextInterval, 5000));
 		mSettings.setFPS(getIntegerValue(editTextFPS, 15));
 		mSettings.setQuality(seekQuality.getProgress());
-
-		//Camera.Size size = mSizesList.get(spinnerSize.getSelectedItemPosition());
-
-		//mSettings.setWidth(size.width);
 
 		String newPath = editTextPath.getText().toString();
 		if (newPath.length() >= 4 && !newPath.equals(mSettings.getPath())) {
@@ -306,6 +321,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 			case R.id.spinnerMode:
 				mSettings.setRecordMode(mRecordMode[position]);
+				break;
+
+			case R.id.spinnerHandler:
+				mSettings.setImageHandler(mImageHandler[position]);
 				break;
 		}
 	}

@@ -46,9 +46,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private WakeLock mWakeLock;
 	private Camera mCamera;
 	private SurfaceHolder mSurfaceHolder;
-	private IRecorder mVideoRecorder;
 	private Timer mTimer;
 	private File mRoot;
+
+	private IRecorder mVideoRecorder = null;
+	private IImageHandler mImageHandler = null;
 
 	private SurfaceView mSurfaceView;
 	private TextView mtvFramesCount;
@@ -70,8 +72,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.activity_main);
-
-
 
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 		mAudioManager = (AudioManager) getSystemService("audio");
@@ -109,6 +109,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		unregisterReceiver(mBattery);
 
 		mBattery = null;
+		mWakeLock = null;
 
 		super.onDestroy();
 	}
@@ -382,6 +383,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			params.setFlashMode(mSettings.getFlashMode());
 		}
 
+		setupImageHandler();
+
 		mCamera.setParameters(params);
 
 		if (mCamera != null) {
@@ -469,6 +472,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		p.setWhiteBalance(mSettings.getBalance());
 		p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
 
+		setupImageHandler();
+
 		try {
 			mCamera.reconnect();
 		} catch (IOException e) {
@@ -529,6 +534,26 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 	}
 
+	private void setupImageHandler() {
+		if (mImageHandler != null && mSettings.getImageHandler() == mImageHandler.getId()) {
+			return;
+		} else {
+			if (mImageHandler != null) {
+				mImageHandler.destroy();
+			}
+		}
+
+		switch (mSettings.getImageHandler()) {
+			case Setting.ImageHandler.NONE:
+				mImageHandler = new StandartImageHandler();
+				break;
+
+			case Setting.ImageHandler.INSERT_DATE_AND_TIME:
+				mImageHandler = new DateTimeImageHandler(mSettings);
+				break;
+		}
+	}
+
 	/**
 	 * Callback, called by camera after frame was captured
 	 * @param data array of bytes
@@ -537,13 +562,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	public void onPictureTaken(byte[] data, Camera camera) {
 		debug("jpeg picture taken");
 		if (mVideoRecorder != null) {
-			mVideoRecorder.addFrame(data);
-
+			mVideoRecorder.addFrame(mImageHandler.handle(data).getBytes());
 			setCurrentCountOfFrames();
-
-			/*if (mVideoRecorder.getFrameCount() == 1) {
-				savePicture(String.format("%s%s.jpg", mPath, mTimeStamp), data);
-			}*/
 		}
 		if (mCamera != null) {
 			mCamera.startPreview();
@@ -562,29 +582,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		return String.format(Locale.getDefault(), "%04d%02d%02d%02d%02d%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(5), c.get(11), c.get(12), c.get(13));
 	}
 
-	/**
-	 * Save preview for video
-	 * @deprecated do not use
-	 * @param filename file name of frame
-	 * @param data bytes of contents file
-	 */
-	@SuppressWarnings("unused")
-	private void savePicture(String filename, byte[] data) {
-		try (FileOutputStream fos = new FileOutputStream(filename)) {
-			fos.write(data);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-
 	private void openSettings() {
 		new SettingsDialog(this, mSettings, mCamera)
 				.setOnSettingsChanged(this)
 				.open();
 	}
-
-
 
 	/**
 	 * Quit dialog

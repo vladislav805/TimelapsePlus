@@ -22,7 +22,7 @@
 					android:layout_height="@dimen/settings_field_height"
 					android:layout_weight="2.0" android:spinnerMode="dialog"/>
 		</TableRow>
-		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent" android:id="@+id/settingsRowFilter">
 			<TextView
 					android:layout_width="wrap_content"
 					android:layout_height="@dimen/settings_field_height"
@@ -35,7 +35,7 @@
 					android:layout_height="@dimen/settings_field_height"
 					android:layout_weight="2.0" android:spinnerMode="dialog"/>
 		</TableRow>
-		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent" android:id="@+id/settingsRowWhiteBalance">
 			<TextView
 					android:layout_width="wrap_content"
 					android:layout_height="@dimen/settings_field_height"
@@ -62,7 +62,7 @@
 					android:layout_gravity="fill_vertical"
 					android:layout_weight="2.0"/>
 		</TableRow>
-		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent" android:id="@+id/settingsFlash">
 			<TextView
 					android:layout_width="wrap_content"
 					android:layout_height="@dimen/settings_field_height"
@@ -71,6 +71,19 @@
 					android:gravity="fill_vertical"/>
 			<Spinner
 					android:id="@+id/spinnerFlash"
+					android:layout_width="match_parent"
+					android:layout_height="@dimen/settings_field_height"
+					android:layout_weight="2.0" android:spinnerMode="dialog"/>
+		</TableRow>
+		<TableRow android:layout_width="match_parent" android:layout_height="match_parent">
+			<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="@dimen/settings_field_height"
+					android:text="@string/settingImageHandler"
+					android:layout_weight="1.0"
+					android:gravity="fill_vertical"/>
+			<Spinner
+					android:id="@+id/spinnerHandler"
 					android:layout_width="match_parent"
 					android:layout_height="@dimen/settings_field_height"
 					android:layout_weight="2.0" android:spinnerMode="dialog"/>
