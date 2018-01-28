@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.AlertDialog.Builder;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
@@ -33,7 +35,7 @@ import java.io.IOException;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
-public class TimeLapseActivity extends AppCompatActivity implements Callback, OnClickListener, PictureCallback, SettingsDialog.OnSettingsChanged {
+public class TimeLapseActivity extends AppCompatActivity implements Callback, OnClickListener, PictureCallback, SettingsDialog.OnSettingsChanged, BatteryReceiver.OnBatteryLevelChangedListener {
 
 	private static final boolean DEBUG = true;
 
@@ -51,9 +53,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private SurfaceView mSurfaceView;
 	private TextView mtvFramesCount;
 	private TextView mtvPrefsCapture;
+	private TextView mtvBatteryLevel;
 	private FloatingActionButton mButtonToggle;
 
 	private SettingsBundle mSettings;
+	private BatteryReceiver mBattery;
 
 	private CaptureState mState = CaptureState.IDLE;
 
@@ -79,11 +83,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		checkIntro();
 
 		initSurfaceView();
+
+		mBattery = new BatteryReceiver(this);
+		registerReceiver(mBattery, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
 	}
 
 	/**
 	 * On minimize app, stop capturing
 	 */
+	@Override
 	public void onPause() {
 		super.onPause();
 
@@ -94,6 +102,15 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		if (mWakeLock.isHeld()) {
 			mWakeLock.release();
 		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		unregisterReceiver(mBattery);
+
+		mBattery = null;
+
+		super.onDestroy();
 	}
 
 	/**
@@ -192,6 +209,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		mButtonToggle = (FloatingActionButton) findViewById(R.id.startButton);
 		mButtonToggle.setOnClickListener(this);
+
+		mtvBatteryLevel = (TextView) findViewById(R.id.mainBatteryLevel);
 
 		findViewById(R.id.settingsButton).setOnClickListener(this);
 	}
@@ -474,6 +493,13 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	public void onDirectoryChanged(String path) {
 		Log.i(TAG, "onDirectoryChanged: ");
 		initDirectory();
+	}
+
+	@Override
+	public void onBatteryLevelChanged(int level) {
+		Log.i(TAG, "onBatteryLevelChanged: " + level);
+		mtvBatteryLevel.setText(String.format(getString(R.string.mainBatteryLevel), level));
+		mtvBatteryLevel.setTextColor(level > 15 ? Color.argb(127, 255, 255, 255) : Color.RED);
 	}
 
 	/**
