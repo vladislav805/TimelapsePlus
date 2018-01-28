@@ -23,4 +23,11 @@
 	<string name="settingVideoFps">FPS видео</string>
 	<string name="settingVideoPath">Путь</string>
 	<string name="settingsSave">Сохранить</string>
+	<string name="mainBatteryLevel">Батарея: %d%%</string>
+	<string name="settingImageFlash">Вспышка</string>
+	<string name="warnPlayingOK">Понял</string>
+	<string name="warnPlayingTitle">Предупреждение</string>
+	<string name="warnPlayingContent">Не все проигрыватели в Android могут воспроизводить видео в кодеке MJPEG, которым
+		кодирует это приложение видео. Попробуйте VLC или открыть видео на ПК.
+	</string>
 </resources>
