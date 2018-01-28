@@ -15,6 +15,7 @@ abstract public class Setting {
 	public static final String WIDTH = "WIDTH";
 	public static final String ZOOM = "ZOOM";
 	public static final String WORK_DIRECTORY = "PATH";
+	public static final String FLASH_MODE = "FLASH_MODE";
 
 	public static final int INTRO_ABOUT_PLAYING = 0x1;
 }

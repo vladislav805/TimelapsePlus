@@ -359,6 +359,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			params.setColorEffect(mSettings.getEffect());
 		}
 
+		if (!mSettings.getFlashMode().isEmpty()) {
+			params.setFlashMode(mSettings.getFlashMode());
+		}
+
 		mCamera.setParameters(params);
 
 		if (mCamera != null) {
@@ -433,9 +437,16 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		Log.i(TAG, "onImagePreferencesChanged: ");
 		Parameters p = mCamera.getParameters();
 
+		p.setFlashMode(mSettings.getFlashMode());
 		p.setColorEffect(mSettings.getEffect());
 		p.setWhiteBalance(mSettings.getBalance());
 		p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
+
+		try {
+			mCamera.reconnect();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		mCamera.setParameters(p);
 	}

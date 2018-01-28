@@ -17,6 +17,7 @@ public class SettingsBundle {
 
 	private String mBalance = "";
 	private String mEffect = "";
+	private String mFlash = "";
 	private String mPath = null;
 	private int mQuality;
 
@@ -36,6 +37,7 @@ public class SettingsBundle {
 		mInterval = settings.getInt(Setting.INTERVAL, 5000);
 		mFPS = settings.getInt(Setting.FPS, 25);
 		mQuality = settings.getInt(Setting.QUALITY, 70);
+		mFlash = settings.getString(Setting.FLASH_MODE, "");
 		mPath = settings.getString(Setting.WORK_DIRECTORY, Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapseDir/");
 		mIntro = settings.getInt(Setting.INTRO, 0);
 		return this;
@@ -51,6 +53,7 @@ public class SettingsBundle {
 		editor.putInt(Setting.INTERVAL, mInterval);
 		editor.putInt(Setting.FPS, mFPS);
 		editor.putInt(Setting.QUALITY, mQuality);
+		editor.putString(Setting.FLASH_MODE, mFlash);
 		editor.putString(Setting.WORK_DIRECTORY, mPath);
 		editor.putInt(Setting.INTRO, mIntro);
 		editor.apply();
@@ -85,6 +88,10 @@ public class SettingsBundle {
 
 	public int getQuality() {
 		return mQuality;
+	}
+
+	public String getFlashMode() {
+		return mFlash;
 	}
 
 	public String getBalance() {
@@ -148,6 +155,11 @@ public class SettingsBundle {
 
 	public SettingsBundle setQuality(int quality) {
 		mQuality = toRange(quality, 0, 100);
+		return this;
+	}
+
+	public SettingsBundle setFlashMode(String mode) {
+		mFlash = mode;
 		return this;
 	}
 

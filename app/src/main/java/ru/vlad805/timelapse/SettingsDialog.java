@@ -36,6 +36,8 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 	private List<Camera.Size> mSizesList;
 
+	private List<String> mFlashesList;
+
 	private OnSettingsChanged mOnSettingsChanged = null;
 
 	@SuppressWarnings("UnnecessaryInterfaceModifier")
@@ -89,6 +91,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		initSpinnerFilter((Spinner) layout.findViewById(R.id.spinnerFilter));
 		initSpinnerSize((Spinner) layout.findViewById(R.id.spinnerSize));
 		initSpinnerWhiteBalance((Spinner) layout.findViewById(R.id.spinnerWhiteBalance));
+		initSpinnerFlash((Spinner) layout.findViewById(R.id.spinnerFlash));
 
 		new Builder(mContext).setView(layout).setPositiveButton(R.string.settingsSave, this).setOnCancelListener(this).create().show();
 	}
@@ -164,6 +167,28 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		}
 	}
 
+	private void initSpinnerFlash(Spinner spinner) {
+		String curMode = mCamera.getParameters().getFlashMode();
+		mFlashesList = mCamera.getParameters().getSupportedFlashModes();
+
+		if (mFlashesList == null) {
+			return;
+		}
+
+		ArrayAdapter mFlashes = new ArrayAdapter<>(mContext, android.R.layout.simple_spinner_item, mFlashesList.toArray(new String[mFlashesList.size()]));
+		mFlashes.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinner.setAdapter(mFlashes);
+
+		for (int i = 0; i < mFlashesList.size(); i++) {
+			if (curMode.equals(mFlashesList.get(i))) {
+				spinner.setSelection(i);
+				break;
+			}
+		}
+
+		spinner.setOnItemSelectedListener(this);
+	}
+
 	public SettingsDialog setOnSettingsChanged(OnSettingsChanged listener) {
 		Log.i(TAG, "setOnSettingsChanged: ");
 		mOnSettingsChanged = listener;
@@ -218,6 +243,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 	@Override
 	public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+		Log.i(TAG, "onItemSelected: " + adapterView.getId() + " == " + R.id.spinnerFlash);
 		switch (adapterView.getId()) {
 			case R.id.spinnerFilter:
 				mSettings.setEffect(mEffectsList.get(position));
@@ -244,6 +270,15 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 			case R.id.spinnerWhiteBalance:
 				mSettings.setBalance(mBalancesList.get(position));
 				mCamera.getParameters().setWhiteBalance(mSettings.getBalance());
+
+				if (mOnSettingsChanged != null) {
+					mOnSettingsChanged.onImagePreferencesChanged();
+				}
+				break;
+
+			case R.id.spinnerFlash:
+				mSettings.setFlashMode(mFlashesList.get(position));
+				mCamera.getParameters().setFlashMode(mSettings.getFlashMode());
 
 				if (mOnSettingsChanged != null) {
 					mOnSettingsChanged.onImagePreferencesChanged();
