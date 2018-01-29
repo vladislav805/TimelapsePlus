@@ -473,10 +473,18 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		Log.i(TAG, "onImagePreferencesChanged: ");
 		Parameters p = mCamera.getParameters();
 
-		p.setFlashMode(mSettings.getFlashMode());
-		p.setColorEffect(mSettings.getEffect());
-		p.setWhiteBalance(mSettings.getBalance());
-		p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
+		if (!mSettings.getFlashMode().isEmpty()) {
+			p.setFlashMode(mSettings.getFlashMode());
+		}
+		if (!mSettings.getEffect().isEmpty()) {
+			p.setColorEffect(mSettings.getEffect());
+		}
+		if (!mSettings.getBalance().isEmpty()) {
+			p.setWhiteBalance(mSettings.getBalance());
+		}
+		if (mSettings.getWidth() != 0 && mSettings.getHeight() != 0){
+			p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
+		}
 
 		setupImageHandler();
 
