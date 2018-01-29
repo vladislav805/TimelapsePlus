@@ -12,7 +12,7 @@ import java.util.Arrays;
 public class MotionJpegGenerator {
 
 	FileChannel aviChannel = null;
-	File aviFile = null;
+	private File aviFile = null;
 	long aviMovieOffset = 0;
 	FileOutputStream aviOutput = null;
 	double framerate = 0.0d;
@@ -47,7 +47,7 @@ public class MotionJpegGenerator {
 	private class AVIIndexList {
 		public int cb = 0;
 		public byte[] fcc = new byte[]{(byte) 105, (byte) 100, (byte) 120, (byte) 49};
-		public ArrayList<AVIIndex> ind = new ArrayList();
+		public ArrayList<AVIIndex> ind = new ArrayList<>();
 
 		public void addAVIIndex(int dwOffset, int dwSize) {
 			this.ind.add(new AVIIndex(dwOffset, dwSize));
@@ -316,6 +316,10 @@ public class MotionJpegGenerator {
 			}
 		}
 		imagedata = null;
+	}
+
+	public File getFile() {
+		return aviFile;
 	}
 
 	public void finishAVI() throws Exception {

@@ -1,4 +1,4 @@
-package ru.vlad805.timelapse;
+package ru.vlad805.timelapse.activity;
 
 import android.Manifest;
 import android.app.AlertDialog.Builder;
@@ -28,9 +28,15 @@ import android.view.SurfaceHolder.Callback;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.*;
+import ru.vlad805.timelapse.*;
+import ru.vlad805.timelapse.imagehandler.DateTimeImageHandler;
+import ru.vlad805.timelapse.imagehandler.IImageHandler;
+import ru.vlad805.timelapse.imagehandler.StandardImageHandler;
+import ru.vlad805.timelapse.recorder.IRecorder;
+import ru.vlad805.timelapse.recorder.PictureRecorder;
+import ru.vlad805.timelapse.recorder.VideoRecorder;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -545,7 +551,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		switch (mSettings.getImageHandler()) {
 			case Setting.ImageHandler.NONE:
-				mImageHandler = new StandartImageHandler();
+				mImageHandler = new StandardImageHandler();
 				break;
 
 			case Setting.ImageHandler.INSERT_DATE_AND_TIME:

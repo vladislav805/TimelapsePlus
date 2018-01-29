@@ -22,7 +22,7 @@
 			android:supportsRtl="true"
 			android:fullBackupContent="false">
 
-		<activity android:name=".MainActivity" android:theme="@style/Theme.AppCompat">
+		<activity android:name=".activity.MainActivity" android:theme="@style/Theme.AppCompat">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
 				<category android:name="android.intent.category.LAUNCHER"/>
@@ -30,7 +30,7 @@
 		</activity>
 
 		<activity
-				android:name=".TimeLapseActivity"
+				android:name=".activity.TimeLapseActivity"
 				android:label="@string/applicationName"
 				android:screenOrientation="portrait"
 				android:configChanges="orientation|keyboardHidden"

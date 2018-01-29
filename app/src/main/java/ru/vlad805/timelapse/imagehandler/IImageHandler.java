@@ -1,4 +1,4 @@
-package ru.vlad805.timelapse;
+package ru.vlad805.timelapse.imagehandler;
 
 @SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface IImageHandler {
