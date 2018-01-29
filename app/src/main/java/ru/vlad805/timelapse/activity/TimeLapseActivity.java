@@ -69,6 +69,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private CaptureState mState = CaptureState.IDLE;
 
+	// private Server mServer;
+
+	// private byte[] mLastCapture = null;
+
 	/**
 	 * Start activity
 	 * @param savedInstanceState saved state
@@ -92,6 +96,37 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		mBattery = new BatteryReceiver(this);
 		registerReceiver(mBattery, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+
+		/*mServer = new Server(7394);
+		mServer.start();
+		mServer.setRequestListener(new Server.OnRequestListener() {
+			@Override
+			public HttpResponse onRequest(HttpRequestParser request) {
+
+				HttpResponse res = new HttpResponseString(request);
+
+				switch (request.getPath()) {
+					case "/":
+						((HttpResponseString) res).write("main");
+						break;
+
+					case "/getImage":
+						if (mLastCapture != null) {
+							res = new HttpResponseBinary(request);
+							((HttpResponseBinary) res).write(mLastCapture).setMimeType("image/jpeg");
+						} else {
+							res.setHttpCode(HttpCode.CODE_404_NOT_FOUND);
+						}
+
+						break;
+
+					default:
+						((HttpResponseString) res).write("404");
+				}
+
+				return res;
+			}
+		});*/
 	}
 
 	/**
@@ -114,8 +149,13 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	protected void onDestroy() {
 		unregisterReceiver(mBattery);
 
+		/*if (mServer != null) {
+			mServer.stop();
+		}*/
+
 		mBattery = null;
 		mWakeLock = null;
+		// mServer = null;
 
 		super.onDestroy();
 	}
@@ -576,7 +616,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	public void onPictureTaken(byte[] data, Camera camera) {
 		debug("jpeg picture taken");
 		if (mVideoRecorder != null) {
-			mVideoRecorder.addFrame(mImageHandler.handle(data).getBytes());
+			byte[] s = mImageHandler.handle(data).getBytes();
+			mVideoRecorder.addFrame(s);
 			setCurrentCountOfFrames();
 		}
 		if (mCamera != null) {
