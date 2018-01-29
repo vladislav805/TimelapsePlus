@@ -11,22 +11,21 @@ import java.util.Arrays;
 
 public class MotionJpegGenerator {
 
-	FileChannel aviChannel = null;
-	private File aviFile = null;
-	long aviMovieOffset = 0;
-	FileOutputStream aviOutput = null;
-	double framerate = 0.0d;
-	int height = 0;
-	AVIIndexList indexlist = null;
-	int numFrames = 0;
-	long riffOffset = 0;
-	int width = 0;
+	private File mAviFile;
+	private FileChannel mAviChannel;
+	private long mAviMovieOffset;
+	private FileOutputStream mAviOutput;
+	private double mFrameRate;
+	private AVIIndexList mIndexList;
+	private int mFramesCount;
+	private int mWidth;
+	private int mHeight;
 
 	private class AVIIndex {
-		public int dwFlags = 16;
-		public int dwOffset = 0;
-		public int dwSize = 0;
-		public byte[] fcc = new byte[]{(byte) 48, (byte) 48, (byte) 100, (byte) 98};
+		private int dwFlags = 16;
+		private int dwOffset;
+		private int dwSize;
+		private byte[] fcc = new byte[]{(byte) 48, (byte) 48, (byte) 100, (byte) 98};
 
 		public AVIIndex(int dwOffset, int dwSize) {
 			this.dwOffset = dwOffset;
@@ -35,10 +34,10 @@ public class MotionJpegGenerator {
 
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwFlags)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwOffset)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwSize)));
+			baos.write(fcc);
+			baos.write(intBytes(swapInt(dwFlags)));
+			baos.write(intBytes(swapInt(dwOffset)));
+			baos.write(intBytes(swapInt(dwSize)));
 			baos.close();
 			return baos.toByteArray();
 		}
@@ -50,41 +49,36 @@ public class MotionJpegGenerator {
 		public ArrayList<AVIIndex> ind = new ArrayList<>();
 
 		public void addAVIIndex(int dwOffset, int dwSize) {
-			this.ind.add(new AVIIndex(dwOffset, dwSize));
+			ind.add(new AVIIndex(dwOffset, dwSize));
 		}
 
 		public byte[] toBytes() throws Exception {
-			this.cb = this.ind.size() * 16;
+			cb = ind.size() * 16;
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.cb)));
-			for (int i = 0; i < this.ind.size(); i++) {
-				baos.write(((AVIIndex) this.ind.get(i)).toBytes());
+			baos.write(fcc);
+			baos.write(MotionJpegGenerator.intBytes(swapInt(cb)));
+			for (AVIIndex anInd : ind) {
+				baos.write(anInd.toBytes());
 			}
 			baos.close();
 			return baos.toByteArray();
 		}
 	}
 
-	private class AVIJunk
-	{
-		public byte[] fcc = new byte[]{'J','U','N','K'};
-		public int size = 1808;
-		public byte[] data = new byte[size];
+	private class AVIJunk {
+		private int size = 1808;
+		private byte[] data = new byte[size];
 
-		public AVIJunk()
-		{
-			Arrays.fill(data,(byte)0);
+		public AVIJunk() {
+			Arrays.fill(data, (byte) 0);
 		}
 
-		public byte[] toBytes() throws Exception
-		{
+		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(fcc);
+			baos.write(new byte[]{'J', 'U', 'N', 'K'});
 			baos.write(intBytes(swapInt(size)));
 			baos.write(data);
 			baos.close();
-
 			return baos.toByteArray();
 		}
 	}
@@ -92,58 +86,54 @@ public class MotionJpegGenerator {
 	private class AVIMainHeader {
 		public int cb = 56;
 		public int dwFlags = 65552;
-		public int dwHeight = 0;
+		public int dwHeight;
 		public int dwInitialFrames = 0;
 		public int dwMaxBytesPerSec = 10000000;
-		public int dwMicroSecPerFrame = 0;
+		public int dwMicroSecPerFrame;
 		public int dwPaddingGranularity = 0;
 		public int[] dwReserved = new int[4];
 		public int dwStreams = 1;
 		public int dwSuggestedBufferSize = 0;
-		public int dwTotalFrames = 0;
-		public int dwWidth = 0;
+		public int dwTotalFrames;
+		public int dwWidth;
 		public byte[] fcc = new byte[]{(byte) 97, (byte) 118, (byte) 105, (byte) 104};
 
 		public AVIMainHeader() {
-			this.dwMicroSecPerFrame = (int) ((1.0d / MotionJpegGenerator.this.framerate) * 1000000.0d);
-			this.dwWidth = MotionJpegGenerator.this.width;
-			this.dwHeight = MotionJpegGenerator.this.height;
-			this.dwTotalFrames = MotionJpegGenerator.this.numFrames;
+			dwMicroSecPerFrame = (int) ((1.0d / mFrameRate) * 1000000.0d);
+			dwWidth = mWidth;
+			dwHeight = mHeight;
+			dwTotalFrames = mFramesCount;
 		}
 
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.cb)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwMicroSecPerFrame)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwMaxBytesPerSec)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwPaddingGranularity)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwFlags)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwTotalFrames)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwInitialFrames)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwStreams)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwSuggestedBufferSize)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwWidth)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwHeight)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwReserved[0])));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwReserved[1])));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwReserved[2])));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwReserved[3])));
+			baos.write(fcc);
+			baos.write(intBytes(swapInt(cb)));
+			baos.write(intBytes(swapInt(dwMicroSecPerFrame)));
+			baos.write(intBytes(swapInt(dwMaxBytesPerSec)));
+			baos.write(intBytes(swapInt(dwPaddingGranularity)));
+			baos.write(intBytes(swapInt(dwFlags)));
+			baos.write(intBytes(swapInt(dwTotalFrames)));
+			baos.write(intBytes(swapInt(dwInitialFrames)));
+			baos.write(intBytes(swapInt(dwStreams)));
+			baos.write(intBytes(swapInt(dwSuggestedBufferSize)));
+			baos.write(intBytes(swapInt(dwWidth)));
+			baos.write(intBytes(swapInt(dwHeight)));
+			baos.write(intBytes(swapInt(dwReserved[0])));
+			baos.write(intBytes(swapInt(dwReserved[1])));
+			baos.write(intBytes(swapInt(dwReserved[2])));
+			baos.write(intBytes(swapInt(dwReserved[3])));
 			baos.close();
 			return baos.toByteArray();
 		}
 	}
 
 	private class AVIMovieList {
-		public byte[] fcc = new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84};
-		public byte[] fcc2 = new byte[]{(byte) 109, (byte) 111, (byte) 118, (byte) 105};
-		public int listSize = 0;
-
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.listSize)));
-			baos.write(this.fcc2);
+			baos.write(new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84});
+			baos.write(intBytes(swapInt(0)));
+			baos.write(new byte[]{(byte) 109, (byte) 111, (byte) 118, (byte) 105});
 			baos.close();
 			return baos.toByteArray();
 		}
@@ -154,37 +144,37 @@ public class MotionJpegGenerator {
 		public int biClrImportant = 0;
 		public int biClrUsed = 0;
 		public byte[] biCompression = new byte[]{(byte) 77, (byte) 74, (byte) 80, (byte) 71};
-		public int biHeight = 0;
+		public int biHeight;
 		public short biPlanes = (short) 1;
 		public int biSize = 40;
-		public int biSizeImage = 0;
-		public int biWidth = 0;
+		public int biSizeImage;
+		public int biWidth;
 		public int biXPelsPerMeter = 0;
 		public int biYPelsPerMeter = 0;
 		public int cb = 40;
 		public byte[] fcc = new byte[]{(byte) 115, (byte) 116, (byte) 114, (byte) 102};
 
 		public AVIStreamFormat() {
-			this.biWidth = MotionJpegGenerator.this.width;
-			this.biHeight = MotionJpegGenerator.this.height;
-			this.biSizeImage = MotionJpegGenerator.this.width * MotionJpegGenerator.this.height;
+			biWidth = mWidth;
+			biHeight = mHeight;
+			biSizeImage = mWidth * mHeight;
 		}
 
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.cb)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biSize)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biWidth)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biHeight)));
-			baos.write(MotionJpegGenerator.shortBytes(MotionJpegGenerator.swapShort(this.biPlanes)));
-			baos.write(MotionJpegGenerator.shortBytes(MotionJpegGenerator.swapShort(this.biBitCount)));
-			baos.write(this.biCompression);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biSizeImage)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biXPelsPerMeter)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biYPelsPerMeter)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biClrUsed)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.biClrImportant)));
+			baos.write(fcc);
+			baos.write(intBytes(swapInt(cb)));
+			baos.write(intBytes(swapInt(biSize)));
+			baos.write(intBytes(swapInt(biWidth)));
+			baos.write(intBytes(swapInt(biHeight)));
+			baos.write(shortBytes(swapShort(biPlanes)));
+			baos.write(shortBytes(swapShort(biBitCount)));
+			baos.write(biCompression);
+			baos.write(intBytes(swapInt(biSizeImage)));
+			baos.write(intBytes(swapInt(biXPelsPerMeter)));
+			baos.write(intBytes(swapInt(biYPelsPerMeter)));
+			baos.write(intBytes(swapInt(biClrUsed)));
+			baos.write(intBytes(swapInt(biClrImportant)));
 			baos.close();
 			return baos.toByteArray();
 		}
@@ -195,11 +185,11 @@ public class MotionJpegGenerator {
 		public int cb = 64;
 		public int dwFlags = 0;
 		public int dwInitialFrames = 0;
-		public int dwLength = 0;
+		public int dwLength;
 		public int dwQuality = -1;
 		public int dwRate = 1000000;
 		public int dwSampleSize = 0;
-		public int dwScale = 0;
+		public int dwScale;
 		public int dwStart = 0;
 		public int dwSuggestedBufferSize = 0;
 		public byte[] fcc = new byte[]{(byte) 115, (byte) 116, (byte) 114, (byte) 104};
@@ -212,135 +202,127 @@ public class MotionJpegGenerator {
 		public short wPriority = (short) 0;
 
 		public AVIStreamHeader() {
-			this.dwScale = (int) ((1.0d / MotionJpegGenerator.this.framerate) * 1000000.0d);
-			this.dwLength = MotionJpegGenerator.this.numFrames;
+			dwScale = (int) ((1.0d / mFrameRate) * 1000000.0d);
+			dwLength = mFramesCount;
 		}
 
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.cb)));
-			baos.write(this.fccType);
-			baos.write(this.fccHandler);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwFlags)));
-			baos.write(MotionJpegGenerator.shortBytes(MotionJpegGenerator.swapShort(this.wPriority)));
-			baos.write(MotionJpegGenerator.shortBytes(MotionJpegGenerator.swapShort(this.wLanguage)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwInitialFrames)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwScale)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwRate)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwStart)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwLength)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwSuggestedBufferSize)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwQuality)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.dwSampleSize)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.left)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.top)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.right)));
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.bottom)));
+			baos.write(fcc);
+			baos.write(intBytes(swapInt(cb)));
+			baos.write(fccType);
+			baos.write(fccHandler);
+			baos.write(intBytes(swapInt(dwFlags)));
+			baos.write(shortBytes(swapShort(wPriority)));
+			baos.write(shortBytes(swapShort(wLanguage)));
+			baos.write(intBytes(swapInt(dwInitialFrames)));
+			baos.write(intBytes(swapInt(dwScale)));
+			baos.write(intBytes(swapInt(dwRate)));
+			baos.write(intBytes(swapInt(dwStart)));
+			baos.write(intBytes(swapInt(dwLength)));
+			baos.write(intBytes(swapInt(dwSuggestedBufferSize)));
+			baos.write(intBytes(swapInt(dwQuality)));
+			baos.write(intBytes(swapInt(dwSampleSize)));
+			baos.write(intBytes(swapInt(left)));
+			baos.write(intBytes(swapInt(top)));
+			baos.write(intBytes(swapInt(right)));
+			baos.write(intBytes(swapInt(bottom)));
 			baos.close();
 			return baos.toByteArray();
 		}
 	}
 
 	private class AVIStreamList {
-		public byte[] fcc = new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84};
-		public byte[] fcc2 = new byte[]{(byte) 115, (byte) 116, (byte) 114, (byte) 108};
-		public int size = 124;
-
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.size)));
-			baos.write(this.fcc2);
+			baos.write(new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84});
+			baos.write(intBytes(swapInt(124)));
+			baos.write(new byte[]{(byte) 115, (byte) 116, (byte) 114, (byte) 108});
 			baos.close();
 			return baos.toByteArray();
 		}
 	}
 
 	public class RIFFHeader {
-		public byte[] fcc = new byte[]{(byte) 82, (byte) 73, (byte) 70, (byte) 70};
-		public byte[] fcc2 = new byte[]{(byte) 65, (byte) 86, (byte) 73, (byte) 32};
-		public byte[] fcc3 = new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84};
-		public byte[] fcc4 = new byte[]{(byte) 104, (byte) 100, (byte) 114, (byte) 108};
-		public int fileSize = 0;
-		public int listSize = 200;
+		private final byte[] fcc = new byte[]{(byte) 82, (byte) 73, (byte) 70, (byte) 70};
+		private final byte[] fcc2 = new byte[]{(byte) 65, (byte) 86, (byte) 73, (byte) 32};
+		private final byte[] fcc3 = new byte[]{(byte) 76, (byte) 73, (byte) 83, (byte) 84};
+		private final byte[] fcc4 = new byte[]{(byte) 104, (byte) 100, (byte) 114, (byte) 108};
+		private int fileSize = 0;
+		private int listSize = 200;
 
 		public byte[] toBytes() throws Exception {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			baos.write(this.fcc);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.fileSize)));
-			baos.write(this.fcc2);
-			baos.write(this.fcc3);
-			baos.write(MotionJpegGenerator.intBytes(MotionJpegGenerator.swapInt(this.listSize)));
-			baos.write(this.fcc4);
+			baos.write(fcc);
+			baos.write(intBytes(swapInt(fileSize)));
+			baos.write(fcc2);
+			baos.write(fcc3);
+			baos.write(intBytes(swapInt(listSize)));
+			baos.write(fcc4);
 			baos.close();
 			return baos.toByteArray();
 		}
 	}
 
-	public MotionJpegGenerator(File aviFile, int width, int height, double framerate, int numFrames) throws Exception {
-		this.aviFile = aviFile;
-		this.width = width;
-		this.height = height;
-		this.framerate = framerate;
-		this.numFrames = numFrames;
-		this.aviOutput = new FileOutputStream(aviFile);
-		this.aviChannel = this.aviOutput.getChannel();
-		this.aviOutput.write(new RIFFHeader().toBytes());
-		this.aviOutput.write(new AVIMainHeader().toBytes());
-		this.aviOutput.write(new AVIStreamList().toBytes());
-		this.aviOutput.write(new AVIStreamHeader().toBytes());
-		this.aviOutput.write(new AVIStreamFormat().toBytes());
-		this.aviOutput.write(new AVIJunk().toBytes());
-		this.aviMovieOffset = this.aviChannel.position();
-		this.aviOutput.write(new AVIMovieList().toBytes());
-		this.indexlist = new AVIIndexList();
+	public MotionJpegGenerator(File aviFile, int width, int height, double frameRate, int lcNumFrames) throws Exception {
+		mAviFile = aviFile;
+		mWidth = width;
+		mHeight = height;
+		mFrameRate = frameRate;
+		mFramesCount = lcNumFrames;
+		mAviOutput = new FileOutputStream(aviFile);
+		mAviChannel = mAviOutput.getChannel();
+		mAviOutput.write(new RIFFHeader().toBytes());
+		mAviOutput.write(new AVIMainHeader().toBytes());
+		mAviOutput.write(new AVIStreamList().toBytes());
+		mAviOutput.write(new AVIStreamHeader().toBytes());
+		mAviOutput.write(new AVIStreamFormat().toBytes());
+		mAviOutput.write(new AVIJunk().toBytes());
+		mAviMovieOffset = mAviChannel.position();
+		mAviOutput.write(new AVIMovieList().toBytes());
+		mIndexList = new AVIIndexList();
 	}
 
 	public void addFrame(byte[] b) throws Exception {
-		byte[] fcc = new byte[]{(byte) 48, (byte) 48, (byte) 100, (byte) 98};
-		byte[] imagedata = b;
-		int useLength = imagedata.length;
-		long position = this.aviChannel.position();
+		int useLength = b.length;
+		long position = mAviChannel.position();
 		int extra = (((int) position) + useLength) % 4;
 		if (extra > 0) {
 			useLength += extra;
 		}
-		this.indexlist.addAVIIndex((int) position, useLength);
-		this.aviOutput.write(fcc);
-		this.aviOutput.write(intBytes(swapInt(useLength)));
-		this.aviOutput.write(imagedata);
+		mIndexList.addAVIIndex((int) position, useLength);
+		mAviOutput.write(new byte[]{(byte) 48, (byte) 48, (byte) 100, (byte) 98});
+		mAviOutput.write(intBytes(swapInt(useLength)));
+		mAviOutput.write(b);
 		if (extra > 0) {
 			for (int i = 0; i < extra; i++) {
-				this.aviOutput.write(0);
+				mAviOutput.write(0);
 			}
 		}
-		imagedata = null;
 	}
 
 	public File getFile() {
-		return aviFile;
+		return mAviFile;
 	}
 
 	public void finishAVI() throws Exception {
-		byte[] indexlistBytes = this.indexlist.toBytes();
-		this.aviOutput.write(indexlistBytes);
-		this.aviOutput.close();
-		long size = this.aviFile.length();
-		RandomAccessFile raf = new RandomAccessFile(this.aviFile, "rw");
+		byte[] indexListBytes = mIndexList.toBytes();
+		mAviOutput.write(indexListBytes);
+		mAviOutput.close();
+		long size = mAviFile.length();
+		RandomAccessFile raf = new RandomAccessFile(mAviFile, "rw");
 		raf.seek(4);
 		raf.write(intBytes(swapInt(((int) size) - 8)));
-		raf.seek(this.aviMovieOffset + 4);
-		raf.write(intBytes(swapInt((int) (((size - 8) - this.aviMovieOffset) - ((long) indexlistBytes.length)))));
+		raf.seek(mAviMovieOffset + 4);
+		raf.write(intBytes(swapInt((int) (((size - 8) - mAviMovieOffset) - ((long) indexListBytes.length)))));
 		raf.close();
 	}
 
 	public void fixAVI(int frameCount) throws Exception {
-		this.numFrames = frameCount;
-		RandomAccessFile raf = new RandomAccessFile(this.aviFile, "rw");
-		RIFFHeader rh = new RIFFHeader();
+		mFramesCount = frameCount;
+		RandomAccessFile raf = new RandomAccessFile(mAviFile, "rw");
 		raf.seek(0);
-		raf.write(rh.toBytes());
+		raf.write(new RIFFHeader().toBytes());
 		raf.write(new AVIMainHeader().toBytes());
 		raf.write(new AVIStreamList().toBytes());
 		raf.write(new AVIStreamHeader().toBytes());
