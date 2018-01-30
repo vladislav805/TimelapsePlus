@@ -10,11 +10,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
-import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
-import android.hardware.Camera.Size;
-import android.media.AudioManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
@@ -29,6 +25,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.*;
 import ru.vlad805.timelapse.*;
+import ru.vlad805.timelapse.control.IControl;
 import ru.vlad805.timelapse.imagehandler.DateTimeImageHandler;
 import ru.vlad805.timelapse.imagehandler.IImageHandler;
 import ru.vlad805.timelapse.imagehandler.StandardImageHandler;
@@ -37,7 +34,7 @@ import ru.vlad805.timelapse.recorder.PictureRecorder;
 import ru.vlad805.timelapse.recorder.VideoRecorder;
 
 import java.io.File;
-import java.io.IOException;
+import java.sql.Time;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
@@ -47,15 +44,14 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private static final String TAG = "TimeLapse";
 
-	private AudioManager mAudioManager;
-
 	private WakeLock mWakeLock;
-	private Camera mCamera;
+	private CameraAdapter mCameraAdapter;
 	private SurfaceHolder mSurfaceHolder;
 	private Timer mTimer;
 	private File mRoot;
 
 	private IRecorder mVideoRecorder = null;
+	private IControl mControl = null;
 	private IImageHandler mImageHandler = null;
 
 	private SurfaceView mSurfaceView;
@@ -68,6 +64,9 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private BatteryReceiver mBattery;
 
 	private CaptureState mState = CaptureState.IDLE;
+
+	private int mPreviousBrightness;
+
 
 	// private Server mServer;
 
@@ -84,49 +83,19 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		setContentView(R.layout.activity_main);
 
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-		mAudioManager = (AudioManager) getSystemService("audio");
 		mWakeLock = ((PowerManager) getSystemService("power")).newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "My Tag");
 		mSettings = new SettingsBundle(this).load();
 		mRoot = new File(mSettings.getPath());
+		mCameraAdapter = new CameraAdapter(this, mSettings);
+
 		initDirectory();
 
 		checkIntro();
 
-		initSurfaceView();
+		initGraphicalUserInterface();
 
 		mBattery = new BatteryReceiver(this);
 		registerReceiver(mBattery, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-
-		/*mServer = new Server(7394);
-		mServer.start();
-		mServer.setRequestListener(new Server.OnRequestListener() {
-			@Override
-			public HttpResponse onRequest(HttpRequestParser request) {
-
-				HttpResponse res = new HttpResponseString(request);
-
-				switch (request.getPath()) {
-					case "/":
-						((HttpResponseString) res).write("main");
-						break;
-
-					case "/getImage":
-						if (mLastCapture != null) {
-							res = new HttpResponseBinary(request);
-							((HttpResponseBinary) res).write(mLastCapture).setMimeType("image/jpeg");
-						} else {
-							res.setHttpCode(HttpCode.CODE_404_NOT_FOUND);
-						}
-
-						break;
-
-					default:
-						((HttpResponseString) res).write("404");
-				}
-
-				return res;
-			}
-		});*/
 	}
 
 	/**
@@ -140,6 +109,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			stopCapture();
 		}
 
+		mCameraAdapter.stopPreview();
+
 		if (mWakeLock.isHeld()) {
 			mWakeLock.release();
 		}
@@ -149,13 +120,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	protected void onDestroy() {
 		unregisterReceiver(mBattery);
 
-		/*if (mServer != null) {
-			mServer.stop();
-		}*/
+		mCameraAdapter.destroy();
 
 		mBattery = null;
 		mWakeLock = null;
-		// mServer = null;
 
 		super.onDestroy();
 	}
@@ -179,7 +147,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 				break;
 
 			case R.id.mainSurface:
-				mCamera.autoFocus(null);
+				mCameraAdapter.autoFocus(null);
 				break;
 
 		}
@@ -191,8 +159,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private final AutoFocusCallback mStartCaptureAfterAutoFocus = new AutoFocusCallback() {
 		@Override
 		public void onAutoFocus(boolean b, Camera camera) {
+			debug(2);
 			mTimer = new Timer();
 			mTimer.schedule(new CaptureTask(), (long) mSettings.getDelay());
+			debug(3);
 		}
 	};
 
@@ -225,22 +195,22 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		));
 	}
 
-	private void setCurrentSettingsPreview() {
-		Size s = mCamera.getParameters().getPictureSize();
+	private void updateSettingsPreview() {
+		CameraAdapter.Size s = mCameraAdapter.getCurrentPictureSize();
 		mtvPrefsCapture.setText(String.format(
 				getString(R.string.mainMediaInfo),
-				s.width,
-				s.height,
+				s.getWidth(),
+				s.getHeight(),
 				mSettings.getFPS(),
 				mSettings.getInterval()
 		));
 	}
 
 	/**
-	 * Initialize surface view
+	 * Initialize GUI
 	 */
-	private void initSurfaceView() {
-		debug("initSurfaceView");
+	private void initGraphicalUserInterface() {
+		debug("initGraphicalUserInterface");
 
 		mSurfaceView = (SurfaceView) findViewById(R.id.mainSurface);
 		mSurfaceView.setOnClickListener(this);
@@ -263,42 +233,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	}
 
 	/**
-	 * Compute optimal preview size for surface view from camera
-	 * @param sizes available sizes from camera
-	 * @param w width
-	 * @param h height
-	 * @return optimal size
-	 */
-	private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
-		double targetRatio = ((double) w) / ((double) h);
-
-		if (sizes == null) {
-			return null;
-		}
-
-		Size optimalSize = null;
-		double minDiff = Double.MAX_VALUE;
-		for (Size size : sizes) {
-			if (Math.abs((((double) size.width) / ((double) size.height)) - targetRatio) <= 0.05d && ((double) Math.abs(size.height - h)) < minDiff) {
-				optimalSize = size;
-				minDiff = (double) Math.abs(size.height - h);
-			}
-		}
-
-		if (optimalSize == null) {
-			minDiff = Double.MAX_VALUE;
-			for (Size size2 : sizes) {
-				if (((double) Math.abs(size2.height - h)) < minDiff) {
-					optimalSize = size2;
-					minDiff = (double) Math.abs(size2.height - h);
-				}
-			}
-		}
-		return optimalSize;
-	}
-
-	/**
 	 * Resize surface view
+	 * TODO replace it
 	 */
 	private void resizePreviewView(int sw, int sh) {
 		View container = findViewById(R.id.linearLayoutPreview);
@@ -347,103 +283,62 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mSurfaceHolder = holder;
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+		Camera camera = null;
 		try {
-			mCamera = Camera.open();
-			mCamera.setPreviewDisplay(holder);
-			mCamera.setDisplayOrientation(0);
+			camera = Camera.open();
+			mCameraAdapter.setCamera(camera);
+			camera.setPreviewDisplay(holder);
+			camera.startPreview();
+			//mCamera.setDisplayOrientation(0);
 		} catch (Exception e) {
-			if (mCamera != null) {
-				mCamera.release();
+			if (camera != null) {
+				camera.release();
 			}
 			Toast.makeText(this, "Fail to connect to camera, exiting...", Toast.LENGTH_LONG).show();
-			mCamera = null;
 			e.printStackTrace();
 			finish();
 			return;
 		}
 
-		if (mCamera == null) {
-			Toast.makeText(this, "Fail to connect to camera, exiting...", Toast.LENGTH_LONG).show();
-			finish();
-			return;
-		}
-
-		Parameters params = mCamera.getParameters();
-		params.setJpegQuality(mSettings.getQuality());
-
-		if (!mSettings.getBalance().isEmpty()) {
-			params.setWhiteBalance(mSettings.getBalance());
-		}
-
-		if (!mSettings.getEffect().isEmpty()) {
-			params.setColorEffect(mSettings.getEffect());
-		}
-
-		if (!(mSettings.getWidth() == 0 || mSettings.getHeight() == 0)) {
-			params.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
-			Size targetPreviewSize = getOptimalPreviewSize(params.getSupportedPreviewSizes(), mSettings.getWidth(), mSettings.getHeight());
-			params.setPreviewSize(targetPreviewSize.width, targetPreviewSize.height);
-			resizePreviewView(targetPreviewSize.width, targetPreviewSize.height);
-		}
-		mCamera.setParameters(params);
+		mCameraAdapter.setup();
 	}
 
 	/**
 	 * Callback for surface destroy
-	 * @param holder holder in surface
 	 */
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
 		debug("surfaceDestroyed.");
 		savePreference();
 		try {
-			mCamera.stopPreview();
-			mCamera.release();
+			mCameraAdapter.release();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		mCamera = null;
 	}
 
 	/**
 	 * Callback for surface change sizes
-	 * @param holder holder in surface
-	 * @param format ?
-	 * @param w new width
-	 * @param h new height
 	 */
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 		debug("surfaceChanged: " + w + " x " + h);
-		Parameters params = mCamera.getParameters();
 
-		if (!mSettings.getBalance().isEmpty()) {
-			params.setWhiteBalance(mSettings.getBalance());
-		}
-
-		if (!mSettings.getEffect().isEmpty()) {
-			params.setColorEffect(mSettings.getEffect());
-		}
-
-		if (!mSettings.getFlashMode().isEmpty()) {
-			params.setFlashMode(mSettings.getFlashMode());
-		}
+		mCameraAdapter.setup();
 
 		setupImageHandler();
 
-		mCamera.setParameters(params);
-
-		if (mCamera != null) {
-			try {
-				mCamera.startPreview();
-			} catch (RuntimeException e) {
-				Toast.makeText(this, "Fail to start preview, exiting...", Toast.LENGTH_LONG).show();
-				finish();
-			}
-		}
+		mCameraAdapter.startPreview();
 	}
 
-	private int mPreviousBrightness;
+	private void toggleLessBrightness(boolean state) {
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+			if (state) {
+				mPreviousBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+			}
+			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, state ? 0 : mPreviousBrightness);
+		}
+	}
 
 	/**
 	 * Start capture timelapse
@@ -453,28 +348,24 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mWakeLock.acquire();
 		mState = CaptureState.RECORD;
 
-		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-			mPreviousBrightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
-			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
-		}
+		toggleLessBrightness(true);
 
-		Parameters param = mCamera.getParameters();
-		Size size = param.getPictureSize();
-		param.setRotation(0);
-		mCamera.setParameters(param);
-
-		setCurrentSettingsPreview();
+		updateSettingsPreview();
 
 		switch (mSettings.getRecordMode()) {
 			case Setting.RecordMode.VIDEO:
-				mVideoRecorder = new VideoRecorder(mSettings.getPath(), String.format("%s.avi", getTimeStamp()), size.width, size.height, (double) mSettings.getFPS());
+				CameraAdapter.Size size = mCameraAdapter.getCurrentPictureSize();
+				mVideoRecorder = new VideoRecorder(mSettings.getPath(), String.format("%s.avi", getTimeStamp()), size.getWidth(), size.getHeight(), (double) mSettings.getFPS());
 				break;
 
 			case Setting.RecordMode.PHOTO_DIR:
 				mVideoRecorder = new PictureRecorder(mSettings.getPath(), getTimeStamp());
-		}
+				break;
 
-		mCamera.autoFocus(mStartCaptureAfterAutoFocus);
+			default:
+				debug("startCapture: WTF, unknown record mode = " + mSettings.getRecordMode());
+		}
+		mCameraAdapter.autoFocus(mStartCaptureAfterAutoFocus);
 	}
 
 	/**
@@ -486,9 +377,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mState = CaptureState.IDLE;
 		mtvFramesCount.setText(R.string.mainFramesCountFinished);
 
-		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-			Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, mPreviousBrightness);
-		}
+		toggleLessBrightness(false);
 
 		try {
 			mTimer.cancel();
@@ -504,56 +393,24 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	@Override
 	public void onVideoPreferencesChanged() {
-		Log.i(TAG, "onVideoPreferencesChanged: ");
-		setCurrentSettingsPreview();
+		debug("onVideoPreferencesChanged");
+		updateSettingsPreview();
 	}
 
 	@Override
 	public void onImagePreferencesChanged() {
-		Log.i(TAG, "onImagePreferencesChanged: ");
-		Parameters p = mCamera.getParameters();
-
-		if (!mSettings.getFlashMode().isEmpty()) {
-			p.setFlashMode(mSettings.getFlashMode());
-		}
-		if (!mSettings.getEffect().isEmpty()) {
-			p.setColorEffect(mSettings.getEffect());
-		}
-		if (!mSettings.getBalance().isEmpty()) {
-			p.setWhiteBalance(mSettings.getBalance());
-		}
-		if (mSettings.getWidth() != 0 && mSettings.getHeight() != 0){
-			p.setPictureSize(mSettings.getWidth(), mSettings.getHeight());
-		}
+		debug("onImagePreferencesChanged");
 
 		setupImageHandler();
-
-		try {
-			mCamera.reconnect();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		mCamera.setParameters(p);
 	}
 
 	@Override
 	public void onSizeChanged(int width, int height) {
 		Log.i(TAG, "onSizeChanged: ");
 
-		List<Camera.Size> previewSizes = mCamera.getParameters().getSupportedPreviewSizes();
+		mCameraAdapter.setPreviewSize(width, height);
 
-		for (Camera.Size previewSize : previewSizes) {
-			float ratio = (((1.0f * ((float) width)) * ((float) previewSize.height)) / ((float) previewSize.width)) / ((float) height);
-			if (((double) ratio) > 0.92d && ((double) ratio) < 1.02d) {
-				mCamera.stopPreview();
-				mCamera.getParameters().setPreviewSize(previewSize.width, previewSize.height);
-				break;
-			}
-		}
 		resizePreviewView(width, height);
-		mCamera.getParameters().setPictureSize(width, height);
-		mCamera.startPreview();
 	}
 
 	@Override
@@ -574,17 +431,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 */
 	public class CaptureTask extends TimerTask {
 
-		public void run() {
-			toggleAudioMute(true);
-			mCamera.takePicture(null, null, null, TimeLapseActivity.this);
-		}
-	}
 
-	private void toggleAudioMute(boolean state) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-			mAudioManager.adjustStreamVolume(AudioManager.STREAM_SYSTEM, state ? AudioManager.ADJUST_MUTE : AudioManager.ADJUST_UNMUTE, 0);
-		} else {
-			mAudioManager.setStreamMute(AudioManager.STREAM_SYSTEM, state);
+		// WTF: onPictureTaken don't called if call takePicture apply in adapter
+		public void run() {
+			mCameraAdapter.getCamera().takePicture(null, null, null, TimeLapseActivity.this);
+			mCameraAdapter.startPreview();
 		}
 	}
 
@@ -610,20 +461,16 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	/**
 	 * Callback, called by camera after frame was captured
-	 * @param data array of bytes
-	 * @param camera camera
 	 */
 	public void onPictureTaken(byte[] data, Camera camera) {
+		debug(8);
 		debug("jpeg picture taken");
 		if (mVideoRecorder != null) {
 			byte[] s = mImageHandler.handle(data).getBytes();
 			mVideoRecorder.addFrame(s);
 			setCurrentCountOfFrames();
 		}
-		if (mCamera != null) {
-			mCamera.startPreview();
-		}
-		toggleAudioMute(false);
+
 		if (mTimer != null) {
 			mTimer.schedule(new CaptureTask(), (long) mSettings.getInterval());
 		}
@@ -634,11 +481,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 */
 	public String getTimeStamp() {
 		Calendar c = Calendar.getInstance();
-		return String.format(Locale.getDefault(), "%04d%02d%02d%02d%02d%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(5), c.get(11), c.get(12), c.get(13));
+		return String.format(Locale.getDefault(), "%04d%02d%02d%02d%02d%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
 	}
 
 	private void openSettings() {
-		new SettingsDialog(this, mSettings, mCamera)
+		new SettingsDialog(this, mSettings, mCameraAdapter)
 				.setOnSettingsChanged(this)
 				.open();
 	}
@@ -710,29 +557,25 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private void savePreference() {
 		debug("Saving preference...");
 
-		Parameters params = mCamera.getParameters();
-		mSettings.setBalance(params.getWhiteBalance()).setEffect(params.getColorEffect());
-
-		Size size = params.getPictureSize();
-		if (size != null) {
-			mSettings.setWidth(size.width).setHeight(size.height);
+		CameraAdapter.Size size;
+		if ((size = mCameraAdapter.getCurrentPictureSize()) != null) {
+			mSettings.setWidth(size.getWidth()).setHeight(size.getHeight());
 		}
 
 		mSettings.save();
 	}
 
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-
-		switch (requestCode) {
+		/*switch (requestCode) { // TODO WTF?
 			case 1:
 				if (resultCode == 999) {
 					finish();
 				}
 				break;
-		}
+		}*/
 	}
 
-	private void debug(String msg) {
-		Log.e("TimeLapse", msg);
+	private <T> void debug(T msg) {
+		Log.e("TimeLapse", String.valueOf(msg));
 	}
 }

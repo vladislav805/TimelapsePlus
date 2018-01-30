@@ -9,12 +9,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.*;
-import ru.vlad805.timelapse.BuildConfig;
-import ru.vlad805.timelapse.R;
-import ru.vlad805.timelapse.Setting;
-import ru.vlad805.timelapse.SettingsBundle;
-
-import java.util.List;
+import ru.vlad805.timelapse.*;
 
 @SuppressWarnings("deprecation")
 public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogInterface.OnClickListener, AdapterView.OnItemSelectedListener, DialogInterface.OnCancelListener, View.OnKeyListener {
@@ -22,7 +17,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	private static final String TAG = "Settings";
 	private Context mContext;
 	private SettingsBundle mSettings;
-	private Camera mCamera;
+	private CameraAdapter mCamera;
 
 	private View mRoot;
 	private EditText editTextDelay;
@@ -32,13 +27,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	private SeekBar seekQuality;
 	private EditText editTextPath;
 
-	private List<String> mEffectsList;
-
-	private List<String> mBalancesList;
-
-	private List<Camera.Size> mSizesList;
-
-	private List<String> mFlashesList;
+	private String[] mEffectsList;
+	private String[] mBalancesList;
+	private CameraAdapter.Size[] mSizesList;
+	private String[] mFlashesList;
 
 	private int mRecordMode[] = {
 			Setting.RecordMode.VIDEO,
@@ -60,7 +52,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		public void onSizeChanged(int width, int height);
 	}
 
-	public SettingsDialog(Context context, SettingsBundle settings, Camera camera) {
+	public SettingsDialog(Context context, SettingsBundle settings, CameraAdapter camera) {
 		mContext = context;
 		mSettings = settings;
 		mCamera = camera;
@@ -120,17 +112,17 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	}
 
 	private void initSpinnerFilter(Spinner spinner) {
-		String curEffect = mCamera.getParameters().getColorEffect();
-		mEffectsList = mCamera.getParameters().getSupportedColorEffects();
+		String curEffect = mCamera.getCurrentEffect();
+		mEffectsList = mCamera.getAvailableEffects();
 
 		if (mEffectsList == null) {
 			mRoot.findViewById(R.id.settingsRowFilter).setVisibility(View.GONE);
 			return;
 		}
 
-		initBaseSpinner(spinner, mEffectsList.toArray(new String[mEffectsList.size()]));
-		for (int i = 0; i < mEffectsList.size(); i++) {
-			if (curEffect.equals(mEffectsList.get(i))) {
+		initBaseSpinner(spinner, mEffectsList);
+		for (int i = 0; i < mEffectsList.length; i++) {
+			if (curEffect.equals(mEffectsList[i])) {
 				spinner.setSelection(i);
 			}
 		}
@@ -139,19 +131,19 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	}
 
 	private void initSpinnerSize(Spinner spinner) {
-		Camera.Size curSize = mCamera.getParameters().getPictureSize();
-		mSizesList = mCamera.getParameters().getSupportedPictureSizes();
+		CameraAdapter.Size curSize = mCamera.getCurrentPictureSize();
+		mSizesList = mCamera.getAvailablePictureSize();
 
 		if (curSize != null && mSizesList != null) {
-			String[] sizeArray = new String[mSizesList.size()];
-			for (int i = 0; i < mSizesList.size(); i++) {
-				sizeArray[i] = mSizesList.get(i).width + "x" + mSizesList.get(i).height;
+			String[] sizeArray = new String[mSizesList.length];
+
+			for (int i = 0; i < mSizesList.length; i++) {
+				sizeArray[i] = mSizesList[i].toString();
 			}
 
-
 			initBaseSpinner(spinner, sizeArray);
-			for (int i = 0; i < mSizesList.size(); ++i) {
-				if (curSize.width == mSizesList.get(i).width && curSize.height == mSizesList.get(i).height) {
+			for (int i = 0; i < mSizesList.length; ++i) {
+				if (curSize.getWidth() == mSizesList[i].getWidth() && curSize.getHeight() == mSizesList[i].getHeight()) {
 					spinner.setSelection(i);
 					break;
 				}
@@ -161,18 +153,18 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	}
 
 	private void initSpinnerWhiteBalance(Spinner spinner) {
-		String curBalance = mCamera.getParameters().getWhiteBalance();
-		mBalancesList = mCamera.getParameters().getSupportedWhiteBalance();
+		String curBalance = mCamera.getCurrentWhiteBalance();
+		mBalancesList = mCamera.getAvailableWhiteBalance();
 
 		if (mBalancesList == null) {
 			mRoot.findViewById(R.id.settingsRowWhiteBalance).setVisibility(View.GONE);
 			return;
 		}
 
-		initBaseSpinner(spinner, mBalancesList.toArray(new String[mBalancesList.size()]));
+		initBaseSpinner(spinner, mBalancesList);
 
-		for (int i = 0; i < mBalancesList.size(); i++) {
-			if (curBalance.equals(mBalancesList.get(i))) {
+		for (int i = 0; i < mBalancesList.length; i++) {
+			if (curBalance.equals(mBalancesList[i])) {
 				spinner.setSelection(i);
 				break;
 			}
@@ -180,18 +172,18 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	}
 
 	private void initSpinnerFlash(Spinner spinner) {
-		String curMode = mCamera.getParameters().getFlashMode();
-		mFlashesList = mCamera.getParameters().getSupportedFlashModes();
+		String curMode = mCamera.getCurrentFlashMode();
+		mFlashesList = mCamera.getAvailableFlashMode();
 
 		if (mFlashesList == null) {
 			mRoot.findViewById(R.id.settingsFlash).setVisibility(View.GONE);
 			return;
 		}
 
-		initBaseSpinner(spinner, mFlashesList.toArray(new String[mFlashesList.size()]));
+		initBaseSpinner(spinner, mFlashesList);
 
-		for (int i = 0; i < mFlashesList.size(); i++) {
-			if (curMode.equals(mFlashesList.get(i))) {
+		for (int i = 0; i < mFlashesList.length; i++) {
+			if (curMode.equals(mFlashesList[i])) {
 				spinner.setSelection(i);
 				break;
 			}
@@ -239,7 +231,6 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 	@Override
 	public void onClick(DialogInterface dialogInterface, int i) {
-		Log.i(TAG, "onClick: dialog closed");
 		mSettings.setDelay(getIntegerValue(editTextDelay, 3000));
 		mSettings.setInterval(getIntegerValue(editTextInterval, 5000));
 		mSettings.setFPS(getIntegerValue(editTextFPS, 15));
@@ -281,11 +272,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 	@Override
 	public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-		Log.i(TAG, "onItemSelected: " + adapterView.getId() + " == " + R.id.spinnerFlash);
 		switch (adapterView.getId()) {
 			case R.id.spinnerFilter:
-				mSettings.setEffect(mEffectsList.get(position));
-				mCamera.getParameters().setColorEffect(mSettings.getEffect());
+				mSettings.setEffect(mEffectsList[position]);
+				mCamera.setEffect(mSettings.getEffect());
 
 				if (mOnSettingsChanged != null) {
 					mOnSettingsChanged.onImagePreferencesChanged();
@@ -293,31 +283,27 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				break;
 
 			case R.id.spinnerSize:
-				Log.i(TAG, "onItemSelected: spinnerSize");
-				Camera.Size targetSize = mSizesList.get(position);
-				Camera.Size cur = mCamera.getParameters().getPictureSize();
+				CameraAdapter.Size targetSize = mSizesList[position];
+				CameraAdapter.Size cur = mCamera.getCurrentPictureSize();
 
-				mSettings.setWidth(targetSize.width);
-				mSettings.setHeight(targetSize.height);
-
-				if ((targetSize.width != cur.width || targetSize.height != cur.height) && mOnSettingsChanged != null) {
-					mOnSettingsChanged.onSizeChanged(targetSize.width, targetSize.height);
+				mSettings.setWidth(targetSize.getWidth());
+				mSettings.setHeight(targetSize.getHeight());
+				if ((targetSize.getWidth() != cur.getWidth() || targetSize.getHeight() != cur.getHeight()) && mOnSettingsChanged != null) {
+					mOnSettingsChanged.onSizeChanged(targetSize.getWidth(), targetSize.getHeight());
 				}
 				break;
 
 			case R.id.spinnerWhiteBalance:
-				mSettings.setBalance(mBalancesList.get(position));
-				mCamera.getParameters().setWhiteBalance(mSettings.getBalance());
-
+				mSettings.setBalance(mBalancesList[position]);
+				mCamera.setWhiteBalance(mSettings.getBalance());
 				if (mOnSettingsChanged != null) {
 					mOnSettingsChanged.onImagePreferencesChanged();
 				}
 				break;
 
 			case R.id.spinnerFlash:
-				mSettings.setFlashMode(mFlashesList.get(position));
-				mCamera.getParameters().setFlashMode(mSettings.getFlashMode());
-
+				mSettings.setFlashMode(mFlashesList[position]);
+				mCamera.setFlashMode(mSettings.getFlashMode());
 				if (mOnSettingsChanged != null) {
 					mOnSettingsChanged.onImagePreferencesChanged();
 				}
@@ -325,25 +311,27 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 			case R.id.spinnerMode:
 				mSettings.setRecordMode(mRecordMode[position]);
+				if (mOnSettingsChanged != null) {
+					mOnSettingsChanged.onVideoPreferencesChanged();
+				}
 				break;
 
 			case R.id.spinnerHandler:
 				mSettings.setImageHandler(mImageHandler[position]);
+				if (mOnSettingsChanged != null) {
+					mOnSettingsChanged.onImagePreferencesChanged();
+				}
 				break;
 		}
-	}
-
-	private void fireChange() {
-		if (mOnSettingsChanged != null) {
-			mOnSettingsChanged.onVideoPreferencesChanged();
-			mOnSettingsChanged.onImagePreferencesChanged();
-		}
+		mCamera.setup();
 	}
 
 	@Override
 	public void onCancel(DialogInterface dialogInterface) {
-		Log.i(TAG, "onCancel: ");
-		fireChange();
+		if (mOnSettingsChanged != null) {
+			mOnSettingsChanged.onVideoPreferencesChanged();
+			mOnSettingsChanged.onImagePreferencesChanged();
+		}
 	}
 
 	@Override
