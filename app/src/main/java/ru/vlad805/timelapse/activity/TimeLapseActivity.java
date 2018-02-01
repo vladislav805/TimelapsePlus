@@ -159,10 +159,8 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private final AutoFocusCallback mStartCaptureAfterAutoFocus = new AutoFocusCallback() {
 		@Override
 		public void onAutoFocus(boolean b, Camera camera) {
-			debug(2);
 			mTimer = new Timer();
 			mTimer.schedule(new CaptureTask(), (long) mSettings.getDelay());
-			debug(3);
 		}
 	};
 
@@ -301,6 +299,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		}
 
 		mCameraAdapter.setup();
+		mCameraAdapter.startPreview();
 	}
 
 	/**
@@ -327,8 +326,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mCameraAdapter.setup();
 
 		setupImageHandler();
-
-		mCameraAdapter.startPreview();
 	}
 
 	private void toggleLessBrightness(boolean state) {
@@ -435,7 +432,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		// WTF: onPictureTaken don't called if call takePicture apply in adapter
 		public void run() {
 			mCameraAdapter.getCamera().takePicture(null, null, null, TimeLapseActivity.this);
-			mCameraAdapter.startPreview();
 		}
 	}
 
@@ -463,7 +459,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	 * Callback, called by camera after frame was captured
 	 */
 	public void onPictureTaken(byte[] data, Camera camera) {
-		debug(8);
 		debug("jpeg picture taken");
 		if (mVideoRecorder != null) {
 			byte[] s = mImageHandler.handle(data).getBytes();
@@ -471,6 +466,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			setCurrentCountOfFrames();
 		}
 
+		mCameraAdapter.startPreview();
 		if (mTimer != null) {
 			mTimer.schedule(new CaptureTask(), (long) mSettings.getInterval());
 		}

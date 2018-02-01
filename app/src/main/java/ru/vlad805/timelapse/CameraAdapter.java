@@ -239,6 +239,5 @@ public class CameraAdapter {
 
 		mCamera.getParameters().setPictureSize(width, height);
 		mCamera.startPreview();
-
 	}
 }
