@@ -10,21 +10,9 @@ public class HttpResponseBinary extends HttpResponse {
 
 	private List<Byte> mBinary;
 
-	private String mMime;
-
 	public HttpResponseBinary(HttpRequestParser data) {
 		super(data);
 		mBinary = new ArrayList<>();
-	}
-
-	public HttpResponseBinary setMimeType(String type) {
-		mMime = type;
-		return this;
-	}
-
-	@Override
-	public String getMimeType() {
-		return mMime;
 	}
 
 	public HttpResponseBinary write(byte[] data) {

@@ -18,6 +18,8 @@ abstract public class Setting {
 	public static final String FLASH_MODE = "FLASH_MODE";
 	public static final String RECORD_MODE = "RECORD_MODE";
 	public static final String HANDLER = "HANDLER";
+	public static final String REMOTE_CONTROL = "REMOTE_CONTROL";
+	public static final String SIZE = "size";
 
 	public static final int INTRO_ABOUT_PLAYING = 0x1;
 	public static final int TLIF_VERSION = 1;

@@ -25,7 +25,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.*;
 import ru.vlad805.timelapse.*;
-import ru.vlad805.timelapse.control.IControl;
+import ru.vlad805.timelapse.control.TLPServer;
 import ru.vlad805.timelapse.imagehandler.DateTimeImageHandler;
 import ru.vlad805.timelapse.imagehandler.IImageHandler;
 import ru.vlad805.timelapse.imagehandler.StandardImageHandler;
@@ -34,7 +34,6 @@ import ru.vlad805.timelapse.recorder.PictureRecorder;
 import ru.vlad805.timelapse.recorder.VideoRecorder;
 
 import java.io.File;
-import java.sql.Time;
 import java.util.*;
 
 @SuppressWarnings("deprecation")
@@ -51,7 +50,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private File mRoot;
 
 	private IRecorder mVideoRecorder = null;
-	private IControl mControl = null;
+	private TLPServer mRemoteControl = null;
 	private IImageHandler mImageHandler = null;
 
 	private SurfaceView mSurfaceView;
@@ -88,11 +87,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mRoot = new File(mSettings.getPath());
 		mCameraAdapter = new CameraAdapter(this, mSettings);
 
-		initDirectory();
-
 		checkIntro();
-
+		initDirectory();
 		initGraphicalUserInterface();
+		initRemoteControl();
 
 		mBattery = new BatteryReceiver(this);
 		registerReceiver(mBattery, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -124,6 +122,10 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 		mBattery = null;
 		mWakeLock = null;
+
+		if (mRemoteControl != null) {
+			mRemoteControl.stop();
+		}
 
 		super.onDestroy();
 	}
@@ -228,6 +230,20 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		mtvBatteryLevel = (TextView) findViewById(R.id.mainBatteryLevel);
 
 		findViewById(R.id.settingsButton).setOnClickListener(this);
+	}
+
+	private void initRemoteControl() {
+		if (mSettings.hasRemoteControl()) {
+			if (mRemoteControl == null) {
+				mRemoteControl = new TLPServer(mCameraAdapter, mSettings);
+				mRemoteControl.start();
+			}
+		} else {
+			if (mRemoteControl != null) {
+				mRemoteControl.stop();
+			}
+			mRemoteControl = null;
+		}
 	}
 
 	/**
@@ -417,6 +433,12 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	}
 
 	@Override
+	public void onControlChanged() {
+		Log.e(TAG, "onControlChanged: onControlChanged");
+		initRemoteControl();
+	}
+
+	@Override
 	public void onBatteryLevelChanged(int level) {
 		Log.i(TAG, "onBatteryLevelChanged: " + level);
 		mtvBatteryLevel.setText(String.format(getString(R.string.mainBatteryLevel), level));
@@ -464,7 +486,11 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			byte[] s = mImageHandler.handle(data).getBytes();
 			mVideoRecorder.addFrame(s);
 			setCurrentCountOfFrames();
+			if (mRemoteControl != null) {
+				mRemoteControl.setLastCapture(s);
+			}
 		}
+
 
 		mCameraAdapter.startPreview();
 		if (mTimer != null) {

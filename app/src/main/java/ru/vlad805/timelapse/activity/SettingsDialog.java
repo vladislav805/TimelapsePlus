@@ -12,7 +12,7 @@ import android.widget.*;
 import ru.vlad805.timelapse.*;
 
 @SuppressWarnings("deprecation")
-public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogInterface.OnClickListener, AdapterView.OnItemSelectedListener, DialogInterface.OnCancelListener, View.OnKeyListener {
+public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogInterface.OnClickListener, AdapterView.OnItemSelectedListener, DialogInterface.OnCancelListener, View.OnKeyListener, CompoundButton.OnCheckedChangeListener {
 
 	private static final String TAG = "Settings";
 	private Context mContext;
@@ -26,6 +26,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 	private SeekBar seekFPS;
 	private SeekBar seekQuality;
 	private EditText editTextPath;
+	private CheckBox checkBoxRemoteControl;
 
 	private String[] mEffectsList;
 	private String[] mBalancesList;
@@ -50,6 +51,7 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 		public void onImagePreferencesChanged();
 		public void onDirectoryChanged(String path);
 		public void onSizeChanged(int width, int height);
+		public void onControlChanged();
 	}
 
 	public SettingsDialog(Context context, SettingsBundle settings, CameraAdapter camera) {
@@ -89,6 +91,10 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 
 		editTextPath = mRoot.findViewById(R.id.editTextPath);
 		editTextPath.setText(mSettings.getPath());
+
+		checkBoxRemoteControl = mRoot.findViewById(R.id.checkboxRemoteControl);
+		checkBoxRemoteControl.setOnCheckedChangeListener(this);
+		checkBoxRemoteControl.setChecked(mSettings.hasRemoteControl());
 
 		((TextView) mRoot.findViewById(R.id.aboutVersion)).setText(String.format(mContext.getString(R.string.aboutVersion), BuildConfig.VERSION_NAME));
 
@@ -324,6 +330,16 @@ public class SettingsDialog implements SeekBar.OnSeekBarChangeListener, DialogIn
 				break;
 		}
 		mCamera.setup();
+	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton checkbox, boolean b) {
+		switch (checkbox.getId()) {
+			case R.id.checkboxRemoteControl:
+				mSettings.setRemoteControl(checkbox.isChecked());
+				mOnSettingsChanged.onControlChanged();
+				break;
+		}
 	}
 
 	@Override

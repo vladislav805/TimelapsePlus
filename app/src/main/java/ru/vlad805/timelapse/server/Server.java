@@ -95,18 +95,22 @@ public class Server {
 
 				//noinspection InfiniteLoopStatement
 				while (true) {
-					Socket socket = httpServerSocket.accept();
-					log("Server socket accepted");
+					try {
+						Socket socket = httpServerSocket.accept();
+						log("Server socket accepted");
 
-					HttpRequestParser req = new HttpRequestParser();
-					log("Request parsed");
+						HttpRequestParser req = new HttpRequestParser();
+						log("Request parsed");
 
-					req.parseRequest(new BufferedReader(new InputStreamReader(socket.getInputStream())));
+						req.parseRequest(new BufferedReader(new InputStreamReader(socket.getInputStream())));
 
-					log("Prepare for response");
-					if (mRequestListener != null) {
-						log("Sending response...");
-						new HttpResponseThread(socket, mRequestListener.onRequest(req)).start();
+						log("Prepare for response");
+						if (mRequestListener != null) {
+							log("Sending response...");
+							new HttpResponseThread(socket, mRequestListener.onRequest(req)).start();
+						}
+					} catch (SocketTimeoutException e) {
+						Log.w("SRV", "timeout");
 					}
 				}
 			} catch (IOException e) {

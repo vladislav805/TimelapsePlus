@@ -17,6 +17,8 @@ public class SettingsBundle {
 	private int mRecordMode;
 	private int mHandler;
 
+	private boolean mRemoteControl;
+
 	private String mBalance = "";
 	private String mEffect = "";
 	private String mFlash = "";
@@ -44,6 +46,7 @@ public class SettingsBundle {
 		mIntro = settings.getInt(Setting.INTRO, 0);
 		mRecordMode = settings.getInt(Setting.RECORD_MODE, Setting.RecordMode.VIDEO);
 		mHandler = settings.getInt(Setting.HANDLER, 0);
+		mRemoteControl = settings.getBoolean(Setting.REMOTE_CONTROL, false);
 		return this;
 	}
 	
@@ -62,6 +65,7 @@ public class SettingsBundle {
 		editor.putInt(Setting.INTRO, mIntro);
 		editor.putInt(Setting.RECORD_MODE, mRecordMode);
 		editor.putInt(Setting.HANDLER, mHandler);
+		editor.putBoolean(Setting.REMOTE_CONTROL, mRemoteControl);
 		editor.apply();
 		return this;
 	}
@@ -118,6 +122,10 @@ public class SettingsBundle {
 
 	public String getPath() {
 		return mPath;
+	}
+
+	public boolean hasRemoteControl() {
+		return mRemoteControl;
 	}
 
 	
@@ -184,6 +192,11 @@ public class SettingsBundle {
 
 	public SettingsBundle setImageHandler(int handler) {
 		mHandler = handler;
+		return this;
+	}
+
+	public SettingsBundle setRemoteControl(boolean state) {
+		mRemoteControl = state;
 		return this;
 	}
 

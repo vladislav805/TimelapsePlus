@@ -92,5 +92,14 @@
 					android:layout_height="@dimen/settings_field_height"
 					android:layout_weight="2.0" android:spinnerMode="dialog"/>
 		</TableRow>
+		<TableRow
+				android:layout_width="match_parent"
+				android:layout_height="match_parent">
+			<CheckBox
+					android:text="@string/settingVideoRemoteControl"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:id="@+id/checkboxRemoteControl" android:layout_span="2"/>
+		</TableRow>
 	</TableLayout>
 </ScrollView>

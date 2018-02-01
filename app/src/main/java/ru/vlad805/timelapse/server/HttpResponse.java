@@ -6,13 +6,19 @@ abstract public class HttpResponse {
 
 	private HttpRequestParser mData;
 	private String mCode = HttpCode.CODE_200_OK;
+	private String mMime;
 
 	protected HttpResponse(HttpRequestParser data) {
 		mData = data;
 	}
 
+	public HttpResponse setMimeType(String type) {
+		mMime = type;
+		return this;
+	}
+
 	public String getMimeType() {
-		return "text/html";
+		return mMime;
 	}
 
 	protected final HttpRequestParser getRequest() {
