@@ -18,20 +18,26 @@ public class HttpResponseThread extends Thread {
 
 	@Override
 	public void run() {
-		try {
-			byte[] result = mResponse.getBytes();
-			byte header[] = ("HTTP/1.1 " + mResponse.getHttpCode() + "\r\nContent-type: " + mResponse.getMimeType() + "\r\nContent-length: " + result.length + "\r\n\r\n").getBytes();
+		byte[] result = mResponse.getBytes();
+		byte header[] = ("HTTP/1.1 " + mResponse.getHttpCode() + "\r\nContent-type: " + mResponse.getMimeType() + "\r\nContent-length: " + result.length + "\r\n\r\n").getBytes();
 
-			OutputStream os = mSocket.getOutputStream();
+		try (OutputStream os = mSocket.getOutputStream()) {
 			os.write(header);
 			os.write(result);
 
 			os.flush();
 			os.close();
 			Log.i("TLServer", "Request from " + mSocket.getInetAddress().toString() + "\n");
-
 			mSocket.close();
+			Log.i("TLServer", "Socket closed\n");
 		} catch (IOException e) {
+			if (mSocket != null) {
+				try {
+					mSocket.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
 			e.printStackTrace();
 		}
 	}

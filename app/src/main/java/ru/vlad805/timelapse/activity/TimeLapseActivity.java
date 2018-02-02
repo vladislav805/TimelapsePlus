@@ -195,7 +195,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 		));
 	}
 
-	private void updateSettingsPreview() {
+	public void updateSettingsPreview() {
 		CameraAdapter.Size s = mCameraAdapter.getCurrentPictureSize();
 		mtvPrefsCapture.setText(String.format(
 				getString(R.string.mainMediaInfo),
@@ -235,7 +235,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	private void initRemoteControl() {
 		if (mSettings.hasRemoteControl()) {
 			if (mRemoteControl == null) {
-				mRemoteControl = new TLPServer(mCameraAdapter, mSettings);
+				mRemoteControl = new TLPServer(mCameraAdapter, mSettings, this);
 				mRemoteControl.start();
 			}
 		} else {
@@ -490,8 +490,6 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 				mRemoteControl.setLastCapture(s);
 			}
 		}
-
-
 		mCameraAdapter.startPreview();
 		if (mTimer != null) {
 			mTimer.schedule(new CaptureTask(), (long) mSettings.getInterval());

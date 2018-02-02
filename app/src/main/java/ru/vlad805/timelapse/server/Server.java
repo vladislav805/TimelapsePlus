@@ -109,8 +109,8 @@ public class Server {
 							log("Sending response...");
 							new HttpResponseThread(socket, mRequestListener.onRequest(req)).start();
 						}
-					} catch (SocketTimeoutException e) {
-						Log.w("SRV", "timeout");
+					} catch (IOException e) {
+						Log.w("SRV", "I/O exception");
 					}
 				}
 			} catch (IOException e) {

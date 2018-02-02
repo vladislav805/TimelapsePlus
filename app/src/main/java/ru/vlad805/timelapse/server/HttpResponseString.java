@@ -16,6 +16,16 @@ public class HttpResponseString extends HttpResponse {
 		return this;
 	}
 
+	public HttpResponseString write(CharSequence str) {
+		mString.append(str);
+		return this;
+	}
+
+	public HttpResponseString write(char str) {
+		mString.append(str);
+		return this;
+	}
+
 	@Override
 	public byte[] getBytes() {
 		return mString.toString().getBytes();

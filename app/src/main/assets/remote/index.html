@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<!--suppress HtmlUnknownTag -->
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>TimelapsePlus &ndash; Remote Control</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				font-family: Arial, sans-serif;
+				-webkit-box-sizing: border-box;
+				-moz-box-sizing: border-box;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-size: 14px;
+			}
+
+			.wrap {
+				margin: 20px auto;
+				max-width: 940px;
+			}
+
+			.preview {
+				position: relative;
+			}
+
+			.preview img {
+				display: block;
+				width: 100%;
+				height: 420px;
+				box-shadow: 0 0 2px 0 rgba(0, 0, 0, .2);
+			}
+
+			select {
+				border: none;
+				background: transparent;
+				height: 20px;
+			}
+
+			select:disabled {
+				background: rgba(96, 96, 96, .1);
+			}
+
+			.preferences {
+				column-count: 3;
+				column-gap: 6px;
+			}
+
+			label {
+				display: flex;
+				flex-flow: row nowrap;
+				padding: 4px;
+			}
+
+			label:hover {
+				background: rgba(128, 128, 128, .1);
+			}
+
+			label .pref-label {
+				flex: 1;
+				line-height: 20px;
+			}
+
+			label .pref-value {
+				flex: 1;
+				display: block;
+			}
+
+			.pref-value * {
+				width: 100%;
+			}
+
+		</style>
+		<script>
+			function requestAPI(endpoint, params) {
+				return new Promise(function(resolve) {
+					var xhr = new XMLHttpRequest;
+					xhr.onreadystatechange = function() {
+						if (xhr.readyState === 4) {
+							resolve(JSON.parse(xhr.responseText));
+						}
+					};
+					xhr.open("GET", "/" + endpoint + "?" + getQueryString(params));
+					xhr.send();
+				});
+			}
+
+			function getQueryString(data) {
+				var str = [];
+				for (var key in data) {
+					if (data.hasOwnProperty(key)) {
+						str.push(key + "=" + encodeURIComponent(data[key]));
+					}
+				}
+				return str.join("&");
+			}
+
+			function g(id) {
+				return document.getElementById(id);
+			}
+
+			function handleSelectPreferenceBySupported(node, data, sel) {
+				while (node.children.length) {
+					node.removeChild(node.firstChild);
+				}
+
+				data.forEach(function(item) {
+					node.appendChild(new Option(item, item, null, sel === item));
+				});
+				node.addEventListener("change", TLRC.onChanged.bind(TLRC, node));
+				node.disabled = false;
+			}
+
+			function handleInputPreference(node, current) {
+				node.value = current;
+				node.disabled = false;
+				node.addEventListener("change", TLRC.onChanged.bind(TLRC, node));
+			}
+
+			//noinspection JSUnusedLocalSymbols
+			/**
+			 * @type {{colorEffect, whiteBalance, size, flashMode, fps, delay, interval, workDirectoryPath, recordMode}}
+			 */
+			var Preferences = {};
+
+			var TLRC = {
+
+				/** @var {{supported: Preferences[], current: Preferences}|null} mData */
+				mData: null,
+
+				init: function() {
+					requestAPI("getSettings").then(function(data) {
+						TLRC.mData = data;
+						TLRC.initPreferences();
+					});
+				},
+
+				initPreferences: function() {
+					handleSelectPreferenceBySupported(g("colorEffect"), TLRC.mData.supported.colorEffect, TLRC.mData.current.colorEffect);
+					handleSelectPreferenceBySupported(g("whiteBalance"), TLRC.mData.supported.whiteBalance, TLRC.mData.current.whiteBalance);
+					handleSelectPreferenceBySupported(g("flashMode"), TLRC.mData.supported.flashMode, TLRC.mData.current.flashMode);
+					handleSelectPreferenceBySupported(g("size"), TLRC.mData.supported.size, TLRC.mData.current.size);
+					handleInputPreference(g("fps"), TLRC.mData.current.fps);
+					handleInputPreference(g("delay"), TLRC.mData.current.delay);
+					handleInputPreference(g("interval"), TLRC.mData.current.interval);
+					handleInputPreference(g("workDirectoryPath"), TLRC.mData.current.workDirectoryPath);
+				},
+
+				onChanged: function(node) {
+					var name = node.id || node.name, value;
+					if (node instanceof HTMLSelectElement) {
+						value = node.options[node.selectedIndex].value;
+					} else {
+						value = node.value.trim();
+					}
+
+					node.disabled = true;
+
+					requestAPI("setSetting", {
+						name: name,
+						value: value
+					}).then(function() {
+						node.disabled = false;
+					});
+				},
+
+				autoFocus: function() {
+					requestAPI("control/autoFocus");
+				}
+			};
+
+			window.addEventListener("DOMContentLoaded", function() {
+				TLRC.init();
+			});
+		</script>
+	</head>
+	<body>
+		<div class="wrap">
+			<div class="preview">
+				<img src="about:blank" alt="Preview not ready" />
+				<button onclick="TLRC.autoFocus();" style="position: absolute; bottom: 0; right: 0;">Auto focus</button>
+			</div>
+			<div class="preferences">
+				<label>
+					<div class="pref-label">Color effect</div>
+					<div class="pref-value">
+						<select id="colorEffect" disabled>
+							<option>not available</option>
+						</select>
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">White balance</div>
+					<div class="pref-value">
+						<select id="whiteBalance" disabled>
+							<option>not available</option>
+						</select>
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Flash mode</div>
+					<div class="pref-value">
+						<select id="flashMode" disabled>
+							<option>not available</option>
+						</select>
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Resolution</div>
+					<div class="pref-value">
+						<select id="size" disabled>
+							<option>not available</option>
+						</select>
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">FPS</div>
+					<div class="pref-value">
+						<input type="number" min="15" max="60" value="" id="fps" disabled />
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Delay (ms)</div>
+					<div class="pref-value">
+						<input type="number" min="0" value="" id="delay" disabled />
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Interval (ms)</div>
+					<div class="pref-value">
+						<input type="number" min="0" value="" id="interval" disabled />
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Directory path</div>
+					<div class="pref-value">
+						<input type="text" value="" id="workDirectoryPath" disabled />
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Image handler</div>
+					<div class="pref-value">
+						<select id="imageHandler" disabled>
+							<option value="0">none</option>
+							<option value="1">insert date and time</option>
+						</select>
+					</div>
+				</label>
+				<label>
+					<div class="pref-label">Record mode</div>
+					<div class="pref-value">
+						<select id="recordMode" disabled>
+							<option value="1">video (avi, MJPEG codec)</option>
+							<option value="2">photos directory (jpg files)</option>
+						</select>
+					</div>
+				</label>
+
+
+			</div>
+		</div>
+	</body>
+</html>

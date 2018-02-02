@@ -1,5 +1,6 @@
 package ru.vlad805.timelapse.control;
 
+import android.content.Context;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,7 +9,12 @@ import org.net.http.HttpRequestParser;
 import ru.vlad805.timelapse.CameraAdapter;
 import ru.vlad805.timelapse.Setting;
 import ru.vlad805.timelapse.SettingsBundle;
+import ru.vlad805.timelapse.activity.TimeLapseActivity;
 import ru.vlad805.timelapse.server.*;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,12 +26,14 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 
 	private CameraAdapter mCamera;
 	private SettingsBundle mSettings;
+	private Context mContext;
 	private WeakReference<byte[]> mLastCapture = new WeakReference<>(null);
 
-	public TLPServer(CameraAdapter camera, SettingsBundle settings) {
+	public TLPServer(CameraAdapter camera, SettingsBundle settings, Context context) {
 		super(7394);
 		mCamera = camera;
 		mSettings = settings;
+		mContext = context;
 		Log.e("SRV", "TLPServer: create");
 		setRequestListener(this);
 	}
@@ -40,7 +48,14 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 
 		switch (request.getPath()) {
 			case "/":
-				((HttpResponseString) res).write("main");
+				try (Reader isr = new InputStreamReader(mContext.getAssets().open("remote/index.html"))) {
+					int tmp;
+					while ((tmp = isr.read()) != -1) {
+						((HttpResponseString) res).write((char) tmp);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				break;
 
 			case "/getImage":
@@ -58,6 +73,16 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 				((HttpResponseJSON) res).write(getJSONSettings());
 				break;
 
+			case "/setSetting":
+				res = new HttpResponseJSON(request);
+
+				Log.i("TLPS", "onRequest: name=" + request.getQueryParam("name") + "; value=" + request.getQueryParam("value"));
+
+				setSettingItem(request.getQueryParam("name"), request.getQueryParam("value"));
+
+				((HttpResponseJSON) res).write("{\"result\":true}");
+				break;
+
 			case "/control/autoFocus":
 				res = new HttpResponseJSON(request);
 				mCamera.autoFocus(null);
@@ -69,6 +94,49 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 		}
 
 		return res;
+	}
+
+	private void setSettingItem(String name, String value) {
+		switch (name) {
+			case Setting.EFFECT:
+				mCamera.setEffect(value);
+				mSettings.setEffect(value);
+				mCamera.setup();
+				break;
+
+			case Setting.WHITE_BALANCE:
+				mCamera.setWhiteBalance(value);
+				mSettings.setBalance(value);
+				mCamera.setup();
+				break;
+
+			case Setting.FLASH_MODE:
+				mCamera.setFlashMode(value);
+				mSettings.setFlashMode(value);
+				mCamera.setup();
+				break;
+
+			case Setting.QUALITY:
+				mCamera.setQuality(Integer.valueOf(value));
+				mSettings.setQuality(Integer.valueOf(value));
+				mCamera.setup();
+				break;
+
+			case Setting.FPS:
+				mSettings.setFPS(Integer.valueOf(value));
+				//((TimeLapseActivity) mContext).updateSettingsPreview();
+				break;
+
+			case Setting.DELAY:
+				mSettings.setDelay(Integer.valueOf(value));
+				//((TimeLapseActivity) mContext).updateSettingsPreview();
+				break;
+
+			case Setting.INTERVAL:
+				mSettings.setInterval(Integer.valueOf(value));
+				//((TimeLapseActivity) mContext).updateSettingsPreview();
+				break;
+		}
 	}
 
 	private class HttpResponseJSON extends HttpResponseString {
@@ -86,6 +154,7 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 			HashMap<String, Object> current = new HashMap<>();
 
 			current.put(Setting.EFFECT, mSettings.getEffect());
+			current.put(Setting.DELAY, mSettings.getDelay());
 			current.put(Setting.INTERVAL, mSettings.getInterval());
 			current.put(Setting.QUALITY, mSettings.getQuality());
 			current.put(Setting.WHITE_BALANCE, mSettings.getBalance());
@@ -130,8 +199,10 @@ public class TLPServer extends Server implements IControl, Server.OnRequestListe
 
 	public JSONArray getJSONArrayFromArray(Object[] data) {
 		JSONArray res = new JSONArray();
-		for (Object item : data) {
-			res.put(item);
+		if (data != null) {
+			for (Object item : data) {
+				res.put(item);
+			}
 		}
 		return res;
 	}

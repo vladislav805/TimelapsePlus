@@ -240,4 +240,8 @@ public class CameraAdapter {
 		mCamera.getParameters().setPictureSize(width, height);
 		mCamera.startPreview();
 	}
+
+	public void setQuality(int quality) {
+		mCamera.getParameters().setJpegQuality(quality);
+	}
 }
