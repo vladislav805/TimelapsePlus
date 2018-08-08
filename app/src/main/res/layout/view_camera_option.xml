@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+	<TextView
+			android:id="@+id/view_camera_option_title"
+			android:paddingStart="@dimen/view_camera_option_label_padding_horizontal"
+			android:paddingEnd="@dimen/view_camera_option_label_padding_horizontal"
+			android:paddingTop="@dimen/view_camera_option_label_padding_vertical"
+			android:paddingBottom="@dimen/view_camera_option_label_padding_vertical"
+			android:layout_weight="1"
+			android:layout_width="0dp"
+			android:layout_height="match_parent" />
+	<FrameLayout
+			android:id="@+id/view_camera_option_wrap"
+			android:layout_weight="1"
+			android:layout_width="0dp"
+			android:layout_height="match_parent" />
+</LinearLayout>

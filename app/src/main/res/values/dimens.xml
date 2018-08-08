@@ -3,4 +3,10 @@
 	<dimen name="frame_info_height">38dp</dimen>
 	<dimen name="cfc_padding">8dp</dimen>
 	<dimen name="settings_padding">16dp</dimen>
+
+	<dimen name="view_camera_option_label_padding_vertical">8dp</dimen>
+	<dimen name="view_camera_option_label_padding_horizontal">12dp</dimen>
+	<dimen name="margin_16dp">16dp</dimen>
+	<dimen name="margin_12dp">12dp</dimen>
+	<dimen name="text_size_14sp">14sp</dimen>
 </resources>

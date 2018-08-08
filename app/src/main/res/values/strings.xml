@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="applicationName" translatable="false">TimelapsePlus</string>
+	<string name="applicationName"
+			translatable="false">TimelapsePlus</string>
 
 	<string name="mainFramesCountFinished">Saved.</string>
 	<string name="mainFramesCount">%1$d frame/%2$ds; %3$dMB, left %4$dMB</string>
@@ -27,9 +28,12 @@
 	<string name="settingVideoDelay">Delay after start (ms)</string>
 	<string name="settingVideoCaptureInterval">Capture Interval (ms)</string>
 	<string name="settingVideoFps">Video FPS</string>
-	<string name="settingVideoFpsDefaultValue" translatable="false">25</string>
-	<string name="settingVideoCaptureIntervalDefaultValue" translatable="false">5000</string>
-	<string name="settingVideoDelayDefaultValue" translatable="false">3000</string>
+	<string name="settingVideoFpsDefaultValue"
+			translatable="false">25</string>
+	<string name="settingVideoCaptureIntervalDefaultValue"
+			translatable="false">5000</string>
+	<string name="settingVideoDelayDefaultValue"
+			translatable="false">3000</string>
 	<string name="settingVideoPath">Path</string>
 	<string name="settingImageFlash">Flash mode</string>
 	<string name="settingVideoMode">Record mode</string>
@@ -43,7 +47,8 @@
 		<item>insert date and time</item>
 	</string-array>
 
-	<string name="aboutVersion" translatable="false">ver. %s</string>
+	<string name="aboutVersion"
+			translatable="false">ver. %s</string>
 	<string name="aboutDevelopers">ExplorerDC © 2011\nVladislav Veluga © 2018</string>
 
 	<string name="errorPermission">Not all permissions are accepted</string>
@@ -52,6 +57,21 @@
 	<string name="warnPlayingOK">Understand</string>
 	<string name="warnPlayingContent">Not all players in Android can play video in MJPEG codec, which write videos by this application. Try VLC or open video on PC.</string>
 	<string name="settingVideoRemoteControl">Enable remote control</string>
+	<string name="settingImageStoreDateTime">Record date and time</string>
+	<string name="start">Start</string>
+	<string name="menu_save">Save preset</string>
+	<string name="settingImageStoreAlign">Save and correct align</string>
+	<string name="settingImageStoreLocation">Store location</string>
+	<string name="settingHeaderExtra">Extra</string>
+	<string name="settingHeaderVideo">Video</string>
+	<string name="settingHeaderCamera">Camera</string>
+	<string name="settingHeaderTimelapse">Timelapse</string>
+	<string name="optionInvalidDefault">Somthing entered incorrect...</string>
+	<string name="optionInvalidFps">Invalid FPS value: available values between 15 and 60</string>
+	<string name="optionInvalidQuality">Invalid quality value: available values between 1 and 100</string>
+	<string name="optionInvalidDelay">Invalid delay: must me greater or equals zero</string>
+	<string name="optionInvalidInterval">Invalid interval value: avaliable values between 50 and 180000 ms</string>
+	<string name="settingProcessingHandlerDateTimeTextSize">Text size (% of height)</string>
 
 
 </resources>

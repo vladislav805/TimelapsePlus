@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="vertical"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+	<TextView
+			android:id="@+id/view_camera_option_header_title"
+			android:layout_marginLeft="@dimen/margin_16dp"
+			android:layout_marginRight="@dimen/margin_16dp"
+			android:layout_marginTop="@dimen/margin_12dp"
+			android:textSize="@dimen/text_size_14sp"
+			android:textStyle="bold"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content" />
+</LinearLayout>

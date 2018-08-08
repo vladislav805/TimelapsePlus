@@ -2,104 +2,206 @@ package ru.vlad805.timelapse.activity;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.hardware.Camera;
+import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.StringRes;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.Toast;
+import permissions.dispatcher.*;
+import ru.vlad805.timelapse.*;
 import ru.vlad805.timelapse.R;
+import ru.vlad805.timelapse.ui.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+@SuppressWarnings("deprecation")
+@RuntimePermissions
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
-	private static final int CHECK_PERMISSIONS = 0x100;
-
-	private static final String[] permissions = new String[] {
-			Manifest.permission.INTERNET,
-			//Manifest.permission.READ_PHONE_STATE,
-			Manifest.permission.READ_EXTERNAL_STORAGE,
-			Manifest.permission.WRITE_EXTERNAL_STORAGE,
-			Manifest.permission.WAKE_LOCK
-	};
 	private static final String TAG = "TimeLapse";
+
+	private LinearLayout mRoot;
+
+	private SettingsUtils mControls;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_holder);
 
-		Log.e(TAG, "access camera: " + (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)) );
+		mRoot = findViewById(R.id.camera_options_root);
+		mControls = new SettingsUtils();
 
-		if (checkPermissions()) {
-			//if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)) {
-				ok();
-			/*} else {
-				Toast.makeText(this, "Please, give all permissions...", Toast.LENGTH_LONG).show();
-			}*/
-		} else {
-			Toast.makeText(this, "Please, give all permissions...", Toast.LENGTH_LONG).show();
-		}
+		MainActivityPermissionsDispatcher.showSettingsWithPermissionCheck(this);
 	}
-
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-		if (requestCode == CHECK_PERMISSIONS) {
-			int ok = 0;
-			int i = 0;
-			for (int item : grantResults) {
-				Log.d(TAG, permissions[i] + " = " + grantResults[i]);
-				if (item == PackageManager.PERMISSION_GRANTED) {
-					ok++;
+		MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
+	}
+
+	@NeedsPermission({
+			Manifest.permission.CAMERA,
+			Manifest.permission.READ_EXTERNAL_STORAGE,
+			Manifest.permission.WRITE_EXTERNAL_STORAGE,
+			Manifest.permission.WAKE_LOCK
+	})
+	void showSettings() {
+		Camera c = CameraUtils.openCamera(0);
+
+		try {
+			mControls
+					.add(Const.CATEGORY_VIDEO, new CameraOptionHeaderView(this, R.string.settingHeaderVideo))
+					.add(Const.OPTION_RECORD_TYPE, getSpinnerRecordType())
+					.add(Const.OPTION_VIDEO_RESOLUTION, getSpinnerSizes(CameraUtils.pictureSizesForCameraParameters(c.getParameters())))
+					.add(Const.OPTION_VIDEO_FPS,
+							new InputNumberCameraOptionView(this, R.string.settingVideoFps, 20)
+									.setValidator(data -> 15 <= data && data <= 60)
+					)
+					.add(Const.OPTION_QUALITY,
+							new InputNumberCameraOptionView(this, R.string.settingImageQuality, 95)
+									.setValidator(data -> 1 <= data && data <= 100)
+					)
+					.add(Const.CATEGORY_CAPTURING, new CameraOptionHeaderView(this, R.string.settingHeaderTimelapse))
+					.add(Const.OPTION_CAPTURE_DELAY,
+							new InputNumberCameraOptionView(this, R.string.settingVideoDelay, 1000)
+									.setValidator(data -> 0 <= data)
+					)
+					.add(Const.OPTION_CAPTURE_INTERVAL,
+							new InputNumberCameraOptionView(this, R.string.settingVideoCaptureInterval, 1000)
+									.setValidator(data -> 50 <= data && data <= 180000)
+					)
+					.add(Const.OPTION_RECORD_PATH,
+							new InputTextCameraOptionView(
+									this,
+									R.string.settingVideoPath,
+									Environment.getExternalStorageDirectory().getAbsolutePath() + "/TimelapsePlus/" + System.currentTimeMillis())
+					)
+
+					.add(Const.CATEGORY_CAMERA, new CameraOptionHeaderView(this, R.string.settingHeaderCamera));
+			if (CameraUtils.cameraSupportsFlash(c)) {
+				List<String> modes = CameraUtils.getFlashModes(c);
+				if (modes != null) {
+					mControls.add(Const.OPTION_CAPTURE_FLASH, new SelectCameraOptionView(this, R.string.settingImageFlash, modes));
 				}
-				i++;
 			}
+			
+			mControls
+					.add(Const.CATEGORY_EXTRA, new CameraOptionHeaderView(this, R.string.settingHeaderExtra))
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME, new CheckboxCameraOptionView(this, R.string.settingImageStoreDateTime, false))
+					.add(Const.OPTION_PH_DT_TEXT_SIZE,
+							new InputNumberCameraOptionView(this, R.string.settingProcessingHandlerDateTimeTextSize, 5)
+									.setValidator(data -> data <= 1 && data <= 90)
+					)
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN, new CheckboxCameraOptionView(this, R.string.settingImageStoreAlign, false))
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK, new CheckboxCameraOptionView(this, R.string.settingImageStoreLocation, false));
 
-			if (ok == grantResults.length) {
-				ok();
-			} else {
-				Toast.makeText(this, R.string.errorPermission, Toast.LENGTH_LONG).show();
-				finish();
-			}
+			mControls.setOnChangeListener(what -> {
+				switch (what) {
+					case Const.OPTION_RECORD_TYPE:
+						mControls.toggle(Const.OPTION_VIDEO_FPS, mControls.<SelectCameraOptionView>get(what).getResultIndex() == Const.RECORD_TYPE_MP4);
+						break;
+
+					case Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME:
+						mControls.toggle(Const.OPTION_PH_DT_TEXT_SIZE, mControls.<CheckboxCameraOptionView>get(what).getResult());
+						break;
+				}
+			});
+
+
+		} finally {
+			c.release();
 		}
+
+
+		View[] views = mControls.getViews();
+		for (View v : views) {
+			mRoot.addView(v);
+		}
+
+
 	}
 
-	private boolean checkPermissions() {
-		List<String> listPermissionsNeeded = new ArrayList<>();
-
-		for (String p : permissions) {
-			int result = ContextCompat.checkSelfPermission(this, p);
-			if (result != PackageManager.PERMISSION_GRANTED) {
-				ActivityCompat.shouldShowRequestPermissionRationale(this, p);
-				listPermissionsNeeded.add(p);
-			}
+	private ICameraOptionView getSpinnerSizes(@Nullable List<Camera.Size> sizes) {
+		if (sizes == null) { return null; }
+		List<String> sizeArray = new ArrayList<>();
+		for (Camera.Size size : sizes) {
+			sizeArray.add(size.width + "x" + size.height);
 		}
-
-		if (!listPermissionsNeeded.isEmpty()) {
-			Log.d(TAG, array2string(listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()])));
-			ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), CHECK_PERMISSIONS);
-			return false;
-		}
-		return true;
+		return new SelectCameraOptionView(this, R.string.settingImageSize, sizeArray);
 	}
 
-	private void ok() {
-		startActivity(new Intent(this, TimeLapseActivity.class));
-		finish();
+	private ICameraOptionView getSpinnerRecordType() {
+		List<String> sizeArray = new ArrayList<>();
+		sizeArray.add(Const.RECORD_TYPE_MP4, "MP4");
+		sizeArray.add(Const.RECORD_TYPE_JPG, "JPG");
+		return new SelectCameraOptionView(this, R.string.settingVideoMode, sizeArray);
 	}
 
-	private static String array2string(String[] s) {
-		StringBuilder sb = new StringBuilder();
-		for (String i : s) {
-			sb.append(i).append("; ");
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.menu_start:
+				try {
+					Bundle b = mControls.toBundle();
+
+					Intent i = new Intent(this, TestActivity.class);
+					i.putExtras(b);
+					startActivity(i);
+				} catch (IllegalOptionValue e) {
+					@StringRes int resId = R.string.optionInvalidDefault;
+
+					switch (e.getWhat()) {
+						case Const.OPTION_VIDEO_FPS: resId = R.string.optionInvalidFps; break;
+						case Const.OPTION_QUALITY: resId = R.string.optionInvalidQuality; break;
+						case Const.OPTION_CAPTURE_DELAY: resId = R.string.optionInvalidDelay; break;
+						case Const.OPTION_CAPTURE_INTERVAL: resId = R.string.optionInvalidInterval; break;
+					}
+
+					Toast.makeText(MainActivity.this, resId, Toast.LENGTH_SHORT).show();
+				}
+
+				break;
 		}
-		return sb.toString();
+		return super.onOptionsItemSelected(item);
+	}
+
+	// Annotate a method which is invoked if the user doesn't grant the permissions
+	@OnPermissionDenied({
+			Manifest.permission.CAMERA,
+			Manifest.permission.READ_EXTERNAL_STORAGE,
+			Manifest.permission.WRITE_EXTERNAL_STORAGE,
+			Manifest.permission.WAKE_LOCK
+	})
+	void showDeniedForCamera() {
+		Toast.makeText(this, "denied", Toast.LENGTH_SHORT).show();
+	}
+
+	// Annotates a method which is invoked if the user
+	// chose to have the device "never ask again" about a permission
+	@OnNeverAskAgain({
+			Manifest.permission.CAMERA,
+			Manifest.permission.READ_EXTERNAL_STORAGE,
+			Manifest.permission.WRITE_EXTERNAL_STORAGE,
+			Manifest.permission.WAKE_LOCK
+	})
+	void showNeverAskForCamera() {
+		Toast.makeText(this, "never ask", Toast.LENGTH_SHORT).show();
 	}
 }
