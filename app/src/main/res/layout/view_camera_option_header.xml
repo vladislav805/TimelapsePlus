@@ -6,10 +6,10 @@
 		android:layout_height="match_parent">
 	<TextView
 			android:id="@+id/view_camera_option_header_title"
-			android:layout_marginLeft="@dimen/margin_16dp"
-			android:layout_marginRight="@dimen/margin_16dp"
+			android:layout_marginStart="@dimen/margin_16dp"
+			android:layout_marginEnd="@dimen/margin_16dp"
 			android:layout_marginTop="@dimen/margin_12dp"
-			android:textSize="@dimen/text_size_14sp"
+			android:textSize="@dimen/text_size_16sp"
 			android:textStyle="bold"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content" />

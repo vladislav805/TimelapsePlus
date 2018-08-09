@@ -2,6 +2,7 @@ package ru.vlad805.timelapse.activity;
 
 import android.Manifest;
 import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -98,11 +99,16 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 			
 			mControls
 					.add(Const.CATEGORY_EXTRA, new CameraOptionHeaderView(this, R.string.settingHeaderExtra))
+
 					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME, new CheckboxCameraOptionView(this, R.string.settingImageStoreDateTime, false))
 					.add(Const.OPTION_PH_DT_TEXT_SIZE,
 							new InputNumberCameraOptionView(this, R.string.settingProcessingHandlerDateTimeTextSize, 5)
-									.setValidator(data -> data <= 1 && data <= 90)
+									.setValidator(data -> 1 <= data && data <= 90)
 					)
+					.add(Const.OPTION_PH_DT_ALIGN, getSpinnerDateTimeTextAlign())
+					.add(Const.OPTION_PH_DT_TEXT_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorText, Color.WHITE))
+					.add(Const.OPTION_PH_DT_BACK_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorBack, Color.BLACK))
+
 					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN, new CheckboxCameraOptionView(this, R.string.settingImageStoreAlign, false))
 					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK, new CheckboxCameraOptionView(this, R.string.settingImageStoreLocation, false));
 
@@ -113,7 +119,17 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 						break;
 
 					case Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME:
-						mControls.toggle(Const.OPTION_PH_DT_TEXT_SIZE, mControls.<CheckboxCameraOptionView>get(what).getResult());
+						boolean state = mControls.<CheckboxCameraOptionView>get(what).getResult();
+						mControls.toggle(Const.OPTION_PH_DT_TEXT_SIZE, state);
+						mControls.toggle(Const.OPTION_PH_DT_ALIGN, state);
+						mControls.toggle(Const.OPTION_PH_DT_TEXT_COLOR, state);
+						mControls.toggle(Const.OPTION_PH_DT_BACK_COLOR, state);
+						break;
+
+					case Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK:
+						if (mControls.<CheckboxCameraOptionView>get(what).getResult()) {
+							MainActivityPermissionsDispatcher.checkLocationWithPermissionCheck(this);
+						}
 						break;
 				}
 			});
@@ -123,13 +139,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 			c.release();
 		}
 
-
 		View[] views = mControls.getViews();
 		for (View v : views) {
 			mRoot.addView(v);
 		}
-
-
 	}
 
 	private ICameraOptionView getSpinnerSizes(@Nullable List<Camera.Size> sizes) {
@@ -148,6 +161,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 		return new SelectCameraOptionView(this, R.string.settingVideoMode, sizeArray);
 	}
 
+	private ICameraOptionView getSpinnerDateTimeTextAlign() {
+		List<String> items = Arrays.asList(getResources().getStringArray(R.array.settingProcessingHandlerDateTimeAlignValues));
+		return new SelectCameraOptionView(this, R.string.settingProcessingHandlerDateTimeAlign, items);
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
@@ -158,28 +176,43 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.menu_start:
-				try {
-					Bundle b = mControls.toBundle();
-
-					Intent i = new Intent(this, TestActivity.class);
-					i.putExtras(b);
-					startActivity(i);
-				} catch (IllegalOptionValue e) {
-					@StringRes int resId = R.string.optionInvalidDefault;
-
-					switch (e.getWhat()) {
-						case Const.OPTION_VIDEO_FPS: resId = R.string.optionInvalidFps; break;
-						case Const.OPTION_QUALITY: resId = R.string.optionInvalidQuality; break;
-						case Const.OPTION_CAPTURE_DELAY: resId = R.string.optionInvalidDelay; break;
-						case Const.OPTION_CAPTURE_INTERVAL: resId = R.string.optionInvalidInterval; break;
-					}
-
-					Toast.makeText(MainActivity.this, resId, Toast.LENGTH_SHORT).show();
-				}
-
+				goToCaptureActivity();
 				break;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void goToCaptureActivity() {
+		try {
+			Bundle b = mControls.toBundle();
+
+			Intent i = new Intent(this, TestActivity.class);
+			i.putExtras(b);
+			startActivity(i);
+		} catch (IllegalOptionValue e) {
+			@StringRes int resId = R.string.optionInvalidDefault;
+
+			switch (e.getWhat()) {
+				case Const.OPTION_VIDEO_FPS: resId = R.string.optionInvalidFps; break;
+				case Const.OPTION_QUALITY: resId = R.string.optionInvalidQuality; break;
+				case Const.OPTION_CAPTURE_DELAY: resId = R.string.optionInvalidDelay; break;
+				case Const.OPTION_CAPTURE_INTERVAL: resId = R.string.optionInvalidInterval; break;
+				default:
+					e.printStackTrace();
+			}
+
+			Toast.makeText(MainActivity.this, resId, Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+	void checkLocation() {
+
+	}
+
+	@OnPermissionDenied(Manifest.permission.ACCESS_FINE_LOCATION)
+	void onLocationPermissionDenied() {
+		mControls.<CheckboxCameraOptionView>get(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK).setup(false);
 	}
 
 	// Annotate a method which is invoked if the user doesn't grant the permissions

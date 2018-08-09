@@ -8,5 +8,8 @@
 	<dimen name="view_camera_option_label_padding_horizontal">12dp</dimen>
 	<dimen name="margin_16dp">16dp</dimen>
 	<dimen name="margin_12dp">12dp</dimen>
+	<dimen name="text_size_16sp">16sp</dimen>
 	<dimen name="text_size_14sp">14sp</dimen>
+	<dimen name="margin_4dp">4dp</dimen>
+	<dimen name="margin_8dp">8dp</dimen>
 </resources>

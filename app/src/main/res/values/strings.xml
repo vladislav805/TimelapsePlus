@@ -66,12 +66,21 @@
 	<string name="settingHeaderVideo">Video</string>
 	<string name="settingHeaderCamera">Camera</string>
 	<string name="settingHeaderTimelapse">Timelapse</string>
-	<string name="optionInvalidDefault">Somthing entered incorrect...</string>
+	<string name="optionInvalidDefault">Something entered incorrect…</string>
 	<string name="optionInvalidFps">Invalid FPS value: available values between 15 and 60</string>
 	<string name="optionInvalidQuality">Invalid quality value: available values between 1 and 100</string>
 	<string name="optionInvalidDelay">Invalid delay: must me greater or equals zero</string>
-	<string name="optionInvalidInterval">Invalid interval value: avaliable values between 50 and 180000 ms</string>
+	<string name="optionInvalidInterval">Invalid interval value: available values between 50 and 180000 ms</string>
 	<string name="settingProcessingHandlerDateTimeTextSize">Text size (% of height)</string>
+	<string name="settingProcessingHandlerDateTimeAlign">Text align</string>
+	<string-array name="settingProcessingHandlerDateTimeAlignValues">
+		<item>Bottom left</item>
+		<item>Bottom right</item>
+		<item>Top left</item>
+		<item>Top right</item>
+	</string-array>
+	<string name="settingProcessingHandlerDateTimeColorText">Text color</string>
+	<string name="settingProcessingHandlerDateTimeColorBack">Background color</string>
 
 
 </resources>

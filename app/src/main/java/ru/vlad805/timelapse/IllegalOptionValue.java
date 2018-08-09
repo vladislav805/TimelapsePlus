@@ -14,4 +14,9 @@ public class IllegalOptionValue extends Exception {
 	public int getWhat() {
 		return mWhat;
 	}
+
+	@Override
+	public String getMessage() {
+		return "invalid value on " + mWhat;
+	}
 }

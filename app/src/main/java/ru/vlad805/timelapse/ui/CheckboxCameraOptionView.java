@@ -24,7 +24,7 @@ public class CheckboxCameraOptionView extends CameraOptionView<Boolean, Boolean,
 	}
 
 	@Override
-	protected void setup(Boolean data) {
+	public void setup(Boolean data) {
 		mControl.setChecked(data);
 	}
 

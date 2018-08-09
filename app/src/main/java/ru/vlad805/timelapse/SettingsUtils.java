@@ -1,5 +1,6 @@
 package ru.vlad805.timelapse;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.util.Pair;
 import android.util.SparseIntArray;
@@ -92,6 +93,8 @@ public class SettingsUtils {
 				data.putString(k, ((InputTextCameraOptionView) v).getResult());
 			} else if (v instanceof SelectCameraOptionView) {
 				data.putString(k, ((SelectCameraOptionView) v).getResult());
+			} else if (v instanceof InputColorCameraOptionView) {
+				data.putInt(k, ((InputColorCameraOptionView) v).getResult());
 			}
 
 		}
