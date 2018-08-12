@@ -44,7 +44,10 @@
 				android:label="@string/applicationName"
 				android:screenOrientation="portrait"
 				android:theme="@style/Theme.AppCompat.NoActionBar"/>
-		<activity android:name=".activity.TestActivity" android:theme="@style/Theme.AppCompat">
+		<activity
+				android:name=".activity.TestActivity"
+				android:theme="@style/Theme.AppCompat.NoActionBar"
+				android:screenOrientation="portrait">
 		</activity>
 	</application>
 

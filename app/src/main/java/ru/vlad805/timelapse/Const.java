@@ -13,8 +13,8 @@ public final class Const {
 
 	public static final int OPTION_VIDEO_RESOLUTION = 1;
 	public static final int OPTION_CAPTURE_FLASH = 2;
-	public static final int OPTION_CAPTURE_INTERVAL = 3;
-	public static final int OPTION_CAPTURE_DELAY = 4;
+	public static final int OPTION_CAPTURE_DELAY = 3;
+	public static final int OPTION_CAPTURE_INTERVAL = 4;
 	public static final int OPTION_VIDEO_FPS = 5;
 	public static final int OPTION_QUALITY = 6;
 	public static final int OPTION_RECORD_PATH = 7;
@@ -36,4 +36,5 @@ public final class Const {
 	public static final int PROCESSING_HANDLER_ALIGN = 1;
 	public static final int PROCESSING_HANDLER_GEOTRACK = 2;
 
+	public static final String NAME_PREFERENCES = "sptimelapse";
 }

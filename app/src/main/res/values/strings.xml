@@ -81,6 +81,9 @@
 	</string-array>
 	<string name="settingProcessingHandlerDateTimeColorText">Text color</string>
 	<string name="settingProcessingHandlerDateTimeColorBack">Background color</string>
+	<string name="optionInvalidProcessingHandlerDateTimeTextSize">Invalid text size: size is percent of height of image. Available values between 1 and 75</string>
+	<string name="processing_handlers">Applying handlers</string>
+	<string name="processing_video">Applying video format</string>
 
 
 </resources>

@@ -1,7 +1,10 @@
 package ru.vlad805.timelapse.activity;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.os.Environment;
@@ -60,26 +63,27 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 	void showSettings() {
 		Camera c = CameraUtils.openCamera(0);
 
+		SharedPreferences sp = getSharedPreferences(Const.NAME_PREFERENCES, Context.MODE_PRIVATE);
 		try {
 			mControls
 					.add(Const.CATEGORY_VIDEO, new CameraOptionHeaderView(this, R.string.settingHeaderVideo))
 					.add(Const.OPTION_RECORD_TYPE, getSpinnerRecordType())
 					.add(Const.OPTION_VIDEO_RESOLUTION, getSpinnerSizes(CameraUtils.pictureSizesForCameraParameters(c.getParameters())))
 					.add(Const.OPTION_VIDEO_FPS,
-							new InputNumberCameraOptionView(this, R.string.settingVideoFps, 20)
+							new InputNumberCameraOptionView(this, R.string.settingVideoFps, sp.getInt(String.valueOf(Const.OPTION_VIDEO_FPS), 20))
 									.setValidator(data -> 15 <= data && data <= 60)
 					)
 					.add(Const.OPTION_QUALITY,
-							new InputNumberCameraOptionView(this, R.string.settingImageQuality, 95)
+							new InputNumberCameraOptionView(this, R.string.settingImageQuality, sp.getInt(String.valueOf(Const.OPTION_QUALITY), 95))
 									.setValidator(data -> 1 <= data && data <= 100)
 					)
 					.add(Const.CATEGORY_CAPTURING, new CameraOptionHeaderView(this, R.string.settingHeaderTimelapse))
 					.add(Const.OPTION_CAPTURE_DELAY,
-							new InputNumberCameraOptionView(this, R.string.settingVideoDelay, 1000)
+							new InputNumberCameraOptionView(this, R.string.settingVideoDelay, sp.getInt(String.valueOf(Const.OPTION_CAPTURE_DELAY), 1000))
 									.setValidator(data -> 0 <= data)
 					)
 					.add(Const.OPTION_CAPTURE_INTERVAL,
-							new InputNumberCameraOptionView(this, R.string.settingVideoCaptureInterval, 1000)
+							new InputNumberCameraOptionView(this, R.string.settingVideoCaptureInterval, sp.getInt(String.valueOf(Const.OPTION_CAPTURE_INTERVAL), 5000))
 									.setValidator(data -> 50 <= data && data <= 180000)
 					)
 					.add(Const.OPTION_RECORD_PATH,
@@ -100,17 +104,17 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 			mControls
 					.add(Const.CATEGORY_EXTRA, new CameraOptionHeaderView(this, R.string.settingHeaderExtra))
 
-					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME, new CheckboxCameraOptionView(this, R.string.settingImageStoreDateTime, false))
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME, new CheckboxCameraOptionView(this, R.string.settingImageStoreDateTime, sp.getBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME), false)))
 					.add(Const.OPTION_PH_DT_TEXT_SIZE,
-							new InputNumberCameraOptionView(this, R.string.settingProcessingHandlerDateTimeTextSize, 5)
-									.setValidator(data -> 1 <= data && data <= 90)
+							new InputNumberCameraOptionView(this, R.string.settingProcessingHandlerDateTimeTextSize, sp.getInt(String.valueOf(Const.OPTION_PH_DT_TEXT_SIZE), 5))
+									.setValidator(data -> 1 <= data && data <= 20)
 					)
 					.add(Const.OPTION_PH_DT_ALIGN, getSpinnerDateTimeTextAlign())
-					.add(Const.OPTION_PH_DT_TEXT_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorText, Color.WHITE))
-					.add(Const.OPTION_PH_DT_BACK_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorBack, Color.BLACK))
+					.add(Const.OPTION_PH_DT_TEXT_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorText, sp.getInt(String.valueOf(Const.OPTION_PH_DT_TEXT_COLOR), Color.WHITE)))
+					.add(Const.OPTION_PH_DT_BACK_COLOR, new InputColorCameraOptionView(this, R.string.settingProcessingHandlerDateTimeColorBack, sp.getInt(String.valueOf(Const.OPTION_PH_DT_BACK_COLOR), Color.BLACK)))
 
-					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN, new CheckboxCameraOptionView(this, R.string.settingImageStoreAlign, false))
-					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK, new CheckboxCameraOptionView(this, R.string.settingImageStoreLocation, false));
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN, new CheckboxCameraOptionView(this, R.string.settingImageStoreAlign, sp.getBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN), false)))
+					.add(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK, new CheckboxCameraOptionView(this, R.string.settingImageStoreLocation, sp.getBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK), false)));
 
 			mControls.setOnChangeListener(what -> {
 				switch (what) {
@@ -133,7 +137,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 						break;
 				}
 			});
-
 
 		} finally {
 			c.release();
@@ -175,6 +178,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+			case R.id.menu_save:
+				savePreferences();
+				break;
+
 			case R.id.menu_start:
 				goToCaptureActivity();
 				break;
@@ -182,27 +189,62 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 		return super.onOptionsItemSelected(item);
 	}
 
+	private void savePreferences() {
+		try {
+			PreferenceBundle b = mControls.toBundle();
+
+			SharedPreferences sp = getSharedPreferences(Const.NAME_PREFERENCES, Context.MODE_PRIVATE);
+			Editor editor = sp.edit();
+
+			editor
+					.putString(String.valueOf(Const.OPTION_VIDEO_RESOLUTION), b.getResolution().toString())
+					.putInt(String.valueOf(Const.OPTION_RECORD_TYPE), b.getRecordType())
+					.putInt(String.valueOf(Const.OPTION_VIDEO_FPS), b.getFps())
+					.putInt(String.valueOf(Const.OPTION_QUALITY), b.getQuality())
+					.putInt(String.valueOf(Const.OPTION_CAPTURE_DELAY), b.getDelay())
+					.putInt(String.valueOf(Const.OPTION_CAPTURE_INTERVAL), b.getInterval())
+					//.putString(String.valueOf(Const.OPTION_RECORD_PATH), b.getPath())
+					.putString(String.valueOf(Const.OPTION_CAPTURE_FLASH), b.getFlashMode())
+					.putBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_DATETIME), b.hasProcessingHandler(Const.PROCESSING_HANDLER_DATETIME))
+					.putBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_ALIGN), b.hasProcessingHandler(Const.PROCESSING_HANDLER_ALIGN))
+					.putBoolean(String.valueOf(Const.OPTION_PROCESSING_HANDLERS + Const.PROCESSING_HANDLER_GEOTRACK), b.hasProcessingHandler(Const.PROCESSING_HANDLER_GEOTRACK))
+					.putInt(String.valueOf(Const.OPTION_PH_DT_TEXT_SIZE), b.getDateTimeTextSize())
+					.putInt(String.valueOf(Const.OPTION_PH_DT_ALIGN), b.getDateTimeAlign())
+					.putInt(String.valueOf(Const.OPTION_PH_DT_BACK_COLOR), b.getDateTimeColorBack())
+					.putInt(String.valueOf(Const.OPTION_PH_DT_TEXT_COLOR), b.getDateTimeColorText());
+
+			editor.apply();
+		} catch (IllegalOptionValue e) {
+			showToastInvalidValue(e);
+		}
+	}
+
 	private void goToCaptureActivity() {
 		try {
-			Bundle b = mControls.toBundle();
+			PreferenceBundle b = mControls.toBundle();
 
 			Intent i = new Intent(this, TestActivity.class);
-			i.putExtras(b);
+			i.putExtra(Intent.EXTRA_STREAM, b);
 			startActivity(i);
 		} catch (IllegalOptionValue e) {
-			@StringRes int resId = R.string.optionInvalidDefault;
-
-			switch (e.getWhat()) {
-				case Const.OPTION_VIDEO_FPS: resId = R.string.optionInvalidFps; break;
-				case Const.OPTION_QUALITY: resId = R.string.optionInvalidQuality; break;
-				case Const.OPTION_CAPTURE_DELAY: resId = R.string.optionInvalidDelay; break;
-				case Const.OPTION_CAPTURE_INTERVAL: resId = R.string.optionInvalidInterval; break;
-				default:
-					e.printStackTrace();
-			}
-
-			Toast.makeText(MainActivity.this, resId, Toast.LENGTH_SHORT).show();
+			showToastInvalidValue(e);
 		}
+	}
+
+	private void showToastInvalidValue(IllegalOptionValue e) {
+		@StringRes int resId = R.string.optionInvalidDefault;
+
+		switch (e.getWhat()) {
+			case Const.OPTION_VIDEO_FPS: resId = R.string.optionInvalidFps; break;
+			case Const.OPTION_QUALITY: resId = R.string.optionInvalidQuality; break;
+			case Const.OPTION_CAPTURE_DELAY: resId = R.string.optionInvalidDelay; break;
+			case Const.OPTION_CAPTURE_INTERVAL: resId = R.string.optionInvalidInterval; break;
+			case Const.OPTION_PH_DT_TEXT_SIZE: resId = R.string.optionInvalidProcessingHandlerDateTimeTextSize; break;
+			default:
+				e.printStackTrace();
+		}
+
+		Toast.makeText(MainActivity.this, resId, Toast.LENGTH_SHORT).show();
 	}
 
 	@NeedsPermission(Manifest.permission.ACCESS_FINE_LOCATION)

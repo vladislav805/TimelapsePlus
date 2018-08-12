@@ -14,11 +14,13 @@ import java.util.List;
 @SuppressLint("ViewConstructor")
 public class SelectCameraOptionView extends CameraOptionView<List<String>, String, Spinner> {
 
+	private List<String> mData;
+
 	public SelectCameraOptionView(Context context, @StringRes int resId, List<String> data) {
 		super(context, resId);
 
 		setControlView(new Spinner(context, Spinner.MODE_DIALOG));
-		setup(data);
+		setup(mData = data);
 	}
 
 	@Override

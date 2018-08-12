@@ -26,9 +26,6 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.*;
 import ru.vlad805.timelapse.*;
 import ru.vlad805.timelapse.control.TLPServer;
-import ru.vlad805.timelapse.imagehandler.DateTimeImageHandler;
-import ru.vlad805.timelapse.imagehandler.IImageHandler;
-import ru.vlad805.timelapse.imagehandler.StandardImageHandler;
 import ru.vlad805.timelapse.recorder.IRecorder;
 import ru.vlad805.timelapse.recorder.PictureRecorder;
 import ru.vlad805.timelapse.recorder.VideoRecorder;
@@ -51,7 +48,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 
 	private IRecorder mVideoRecorder = null;
 	private TLPServer mRemoteControl = null;
-	private IImageHandler mImageHandler = null;
+	//private IImageHandler mImageHandler = null;
 
 	private SurfaceView mSurfaceView;
 	private TextView mtvFramesCount;
@@ -458,7 +455,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	}
 
 	private void setupImageHandler() {
-		if (mImageHandler != null && mSettings.getImageHandler() == mImageHandler.getId()) {
+		/*if (mImageHandler != null && mSettings.getImageHandler() == mImageHandler.getId()) {
 			return;
 		} else {
 			if (mImageHandler != null) {
@@ -474,7 +471,7 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 			case Setting.ImageHandler.INSERT_DATE_AND_TIME:
 				mImageHandler = new DateTimeImageHandler(mSettings);
 				break;
-		}
+		}*/
 	}
 
 	/**
@@ -483,12 +480,12 @@ public class TimeLapseActivity extends AppCompatActivity implements Callback, On
 	public void onPictureTaken(byte[] data, Camera camera) {
 		debug("jpeg picture taken");
 		if (mVideoRecorder != null) {
-			byte[] s = mImageHandler.handle(data).getBytes();
+		/*	byte[] s = mImageHandler.handle(data).getBytes();
 			mVideoRecorder.addFrame(s);
 			setCurrentCountOfFrames();
 			if (mRemoteControl != null) {
 				mRemoteControl.setLastCapture(s);
-			}
+			}*/
 		}
 		mCameraAdapter.startPreview();
 		if (mTimer != null) {
